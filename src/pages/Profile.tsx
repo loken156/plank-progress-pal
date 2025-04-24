@@ -1,151 +1,170 @@
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import UserStats from "@/components/UserStats";
+import AchievementBadges from "@/components/AchievementBadges";
+import ProfileHeader, { ProfileData } from "@/components/ProfileHeader";
+import PlankHistory, { PlankEntry } from "@/components/PlankHistory";
+import ProgressGraph from "@/components/ProfileGraph";
+import { toast } from "@/components/ui/sonner";
 
-import React from 'react';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import UserStats from '@/components/UserStats';
-import AchievementBadges from '@/components/AchievementBadges';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { 
-  Calendar, 
-  User, 
-  Clock, 
-  TrendingUp 
-} from "lucide-react";
+const ProfilePage: React.FC = () => {
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [planks, setPlanks] = useState<PlankEntry[]>([]);
+  const [userId, setUserId] = useState<string>("");
+  const navigate = useNavigate();
 
-const Profile = () => {
-  // Mock data for the user profile
-  const user = {
-    name: "Emma Johansson",
-    username: "emma_fit",
-    profileImage: "https://i.pravatar.cc/300?img=25",
-    joinDate: "Mars 2024",
-    bio: "Träningsentusiast och plankutmanare 💪 Jobbar på att förbättra min kärna och delar min resa!"
+  useEffect(() => {
+    async function load() {
+      // 1) Get logged-in user
+      const {
+        data: { user },
+        error: userErr,
+      } = await supabase.auth.getUser();
+
+      if (userErr || !user) {
+        navigate("/login");
+        return;
+      }
+      setUserId(user.id);
+
+      // 2) Fetch profile with proper aliasing
+        // 1) fetch snake_case columns
+        const { data: row, error } = await supabase
+          .from("profiles")
+          .select("full_name,username,profile_image,bio,join_date,followers_count")
+          .eq("id", user.id)
+          .single();
+
+        if (error || !row) {
+          toast.error("Kunde inte ladda din profil.");
+          return;
+        }
+
+        // 2) map into your camelCase interface
+        const prof: ProfileData = {
+          name:           row.full_name,
+          username:       row.username,
+          profileImage:   row.profile_image,
+          bio:            row.bio,
+          joinDate:       row.join_date,
+          followersCount: row.followers_count,
+        };
+
+        setProfile(prof);
+
+
+
+      if (profErr || !prof) {
+        toast.error("Kunde inte ladda din profil.");
+      } else {
+        setProfile(prof);
+      }
+
+      // 3) Fetch last 5 planks
+      const { data: rawPlanks, error: plankErr } = await supabase
+        .from<{ id: number; plank_date: string; duration_s: number }>("planks")
+        .select("id, plank_date, duration_s")
+        .eq("user_id", user.id)
+        .order("plank_date", { ascending: false })
+        .limit(5);
+
+      if (plankErr) {
+        console.error(plankErr);
+        return;
+      }
+
+      // 4) Map into UI shape
+      const mapped = (rawPlanks || []).map((p) => {
+        const d = new Date(p.plank_date);
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+
+        let dayLabel: string;
+        if (d.toDateString() === today.toDateString()) {
+          dayLabel = "Idag";
+        } else if (d.toDateString() === yesterday.toDateString()) {
+          dayLabel = "Igår";
+        } else {
+          const wd = d.toLocaleDateString("sv-SE", { weekday: "long" });
+          dayLabel = wd.charAt(0).toUpperCase() + wd.slice(1);
+        }
+
+        const dateDisplay = d.toLocaleDateString("sv-SE", {
+          day: "numeric",
+          month: "long",
+        });
+
+        return {
+          id: p.id,
+          date: dateDisplay,
+          day: dayLabel,
+          time: p.duration_s,
+        };
+      });
+
+      setPlanks(mapped);
+    }
+
+    load();
+  }, [navigate]);
+
+  const handleSave = async (updates: Partial<ProfileData>) => {
+    if (!profile || !userId) return;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        full_name: updates.name,
+        profile_image: updates.profileImage,
+        bio: updates.bio,
+      })
+      .eq("id", userId);
+
+    if (error) {
+      toast.error("Kunde inte spara ändringar.");
+    } else {
+      setProfile({ ...profile, ...updates });
+      toast.success("Profil uppdaterad!");
+    }
   };
 
-  // Mock data for plank history
-  const plankHistory = [
-    { id: 1, date: "24 april", time: 180, day: "Idag" },
-    { id: 2, date: "23 april", time: 165, day: "Igår" },
-    { id: 3, date: "22 april", time: 170, day: "Tisdag" },
-    { id: 4, date: "21 april", time: 155, day: "Måndag" },
-    { id: 5, date: "20 april", time: 160, day: "Söndag" },
-  ];
-
-  const formatTime = (totalSeconds: number): string => {
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
-  };
+  if (!profile) {
+    return <div className="p-8 text-center">Laddar din profil…</div>;
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      
-      <main className="flex-grow bg-gray-50">
-        {/* Profile Header */}
-        <section className="bg-gradient-to-r from-plank-blue to-plank-green text-white py-12 px-6">
-          <div className="container mx-auto">
-            <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-              <div className="w-32 h-32 rounded-full border-4 border-white overflow-hidden flex-shrink-0">
-                <img 
-                  src={user.profileImage} 
-                  alt={user.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              
-              <div className="text-center md:text-left">
-                <h1 className="text-2xl md:text-3xl font-bold font-poppins mb-1">
-                  {user.name}
-                </h1>
-                <p className="text-lg opacity-90 mb-3">@{user.username}</p>
-                <p className="max-w-lg opacity-80 mb-4">
-                  {user.bio}
-                </p>
-                <div className="flex flex-wrap justify-center md:justify-start gap-4">
-                  <div className="flex items-center">
-                    <Calendar className="h-4 w-4 mr-1 opacity-70" />
-                    <span className="text-sm">Medlem sedan {user.joinDate}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <User className="h-4 w-4 mr-1 opacity-70" />
-                    <span className="text-sm">12 Följare</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
 
-        <div className="container mx-auto py-8 px-6">
-          {/* Stats Section */}
-          <section className="mb-12">
+      <main className="flex-grow bg-gray-50">
+        <ProfileHeader data={profile} onSave={handleSave} />
+
+        <div className="container mx-auto py-8 px-6 space-y-12">
+          <section>
             <h2 className="text-xl font-semibold mb-4">Min Statistik</h2>
             <UserStats />
           </section>
 
-          {/* Plank History */}
-          <section className="mb-12">
+          <section>
             <h2 className="text-xl font-semibold mb-4">Plankhistorik</h2>
-            <Card className="plank-card">
-              <CardHeader className="border-b pb-3">
-                <CardTitle className="text-lg flex items-center">
-                  <Clock className="h-5 w-5 text-plank-blue mr-2" />
-                  Senaste Plankor
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <ul className="divide-y">
-                  {plankHistory.map(entry => (
-                    <li key={entry.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
-                      <div>
-                        <p className="font-medium">{entry.day}</p>
-                        <p className="text-sm text-gray-500">{entry.date}</p>
-                      </div>
-                      <div className="flex items-center">
-                        <div className="h-8 w-8 bg-plank-light-blue rounded-full flex items-center justify-center mr-3">
-                          <Clock className="h-4 w-4 text-plank-blue" />
-                        </div>
-                        <span className="font-semibold">{formatTime(entry.time)}</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-                <div className="p-4 border-t text-center">
-                  <button className="text-plank-blue font-medium hover:underline">
-                    Visa hela historiken
-                  </button>
-                </div>
-              </CardContent>
-            </Card>
+            <PlankHistory
+              entries={planks}
+              onViewAll={() => navigate("/history")}
+            />
           </section>
 
-          <section className="mb-12">
+          <section>
             <h2 className="text-xl font-semibold mb-4">Mina Prestationer</h2>
             <AchievementBadges />
           </section>
 
-          {/* Progress Graph Placeholder */}
           <section>
             <h2 className="text-xl font-semibold mb-4">Min Utveckling</h2>
-            <Card className="plank-card">
-              <CardHeader className="border-b pb-3">
-                <CardTitle className="text-lg flex items-center">
-                  <TrendingUp className="h-5 w-5 text-plank-green mr-2" />
-                  Plank Utveckling
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="h-60 bg-gray-100 rounded-md flex items-center justify-center">
-                  <p className="text-gray-500">Utvecklingsdiagram kommer snart</p>
-                </div>
-              </CardContent>
-            </Card>
+            <ProgressGraph />
           </section>
         </div>
       </main>
@@ -155,4 +174,4 @@ const Profile = () => {
   );
 };
 
-export default Profile;
+export default ProfilePage;
