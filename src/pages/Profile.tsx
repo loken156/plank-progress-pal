@@ -57,7 +57,7 @@ const ProfilePage: React.FC = () => {
 
 
 
-      if (profErr || !prof) {
+      if (!prof) {
         toast.error("Kunde inte ladda din profil.");
       } else {
         setProfile(prof);
