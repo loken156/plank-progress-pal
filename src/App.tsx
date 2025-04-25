@@ -13,6 +13,7 @@ import Challenges from "./pages/Challenges";
 import AdminChallenges from "./pages/admin/Challenges";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import RedirectToSelf from "./components/RedirectToSelf";
 
 const queryClient = new QueryClient();
 
@@ -92,14 +93,24 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
+                      <Route
+                          path="/profile"
+                          element={
+                              <ProtectedRoute>
+                                  <RedirectToSelf />
+                              </ProtectedRoute>
+                          }
+                      />
+
+                      {/* The existing /profile/:id */}
+                      <Route
+                          path="/profile/:id"
+                          element={
+                              <ProtectedRoute>
+                                  <Profile />
+                              </ProtectedRoute>
+                          }
+                      />
             <Route
               path="/challenges"
               element={

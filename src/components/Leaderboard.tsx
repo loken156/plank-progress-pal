@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserPlus, TrendingUp } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
+import { useNavigate } from "react-router-dom";
 
 type LeaderboardEntry = {
     user_id: string;
@@ -21,6 +22,7 @@ const formatTime = (totalSeconds: number): string => {
 const Leaderboard: React.FC = () => {
     const [board, setBoard] = useState<LeaderboardEntry[]>([]);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
     useEffect(() => {
         async function load() {
@@ -47,10 +49,6 @@ const Leaderboard: React.FC = () => {
                         <TrendingUp className="h-5 w-5 text-plank-blue mr-2" />
                         This Month’s Leaderboard
                     </CardTitle>
-                    <button className="text-sm text-plank-blue flex items-center">
-                        <UserPlus className="h-4 w-4 mr-1" />
-                        <span className="hidden sm:inline">Find Friends</span>
-                    </button>
                 </div>
             </CardHeader>
 
@@ -63,9 +61,13 @@ const Leaderboard: React.FC = () => {
                     <ul className="divide-y">
                         {board.map((entry) => (
                             <li
-                                key={entry.user_id}
-                                className="flex items-center p-4 hover:bg-gray-50 transition-colors"
-                            >
+                               key={entry.user_id}
+                               onClick={() => navigate(`/profile/${entry.user_id}`)}
+                               className="cursor-pointer flex items-center p-4 hover:bg-gray-50 transition-colors"
+                               role="button"
+                               tabIndex={0}
+                               onKeyDown={(e) => { if (e.key === "Enter") navigate(`/profile/${entry.user_id}`); }}
+                             >
                                 <div className="w-8 text-center font-bold text-gray-500">
                                     {entry.rank}
                                 </div>

@@ -12,6 +12,7 @@ export interface PlankEntry {
 }
 
 interface PlankHistoryProps {
+    userId: string;
     onViewAll?: () => void;
 }
 
@@ -21,32 +22,31 @@ const formatTime = (totalSeconds: number): string => {
     return `${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
 };
 
-const PlankHistory: React.FC<PlankHistoryProps> = ({ onViewAll }) => {
+const PlankHistory: React.FC<PlankHistoryProps> = ({ userId, onViewAll }) => {
     const [entries, setEntries] = useState<PlankEntry[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
 
     useEffect(() => {
+        if (!userId) {
+            setEntries([]);
+            setLoading(false);
+            return;
+        }
+
         async function loadHistory() {
             setLoading(true);
             try {
-                // 1) get current user
-                const {
-                    data: { user },
-                    error: userErr,
-                } = await supabase.auth.getUser();
-                if (userErr || !user) throw userErr || new Error("No user");
-
-                // 2) fetch last 5 planks
+                // fetch last 5 planks for the given user
                 const { data: rows, error } = await supabase
                     .from<{ id: number; plank_date: string; duration_s: number }>("planks")
                     .select("id, plank_date, duration_s")
-                    .eq("user_id", user.id)
+                    .eq("user_id", userId)
                     .order("plank_date", { ascending: false })
                     .limit(5);
 
                 if (error) throw error;
 
-                // 3) map into UI entries
+                // map into UI entries
                 const mapped = (rows || []).map((r) => {
                     const d = new Date(r.plank_date);
                     const today = new Date();
@@ -86,7 +86,7 @@ const PlankHistory: React.FC<PlankHistoryProps> = ({ onViewAll }) => {
         }
 
         loadHistory();
-    }, []);
+    }, [userId]);
 
     if (loading) {
         return (
@@ -132,7 +132,12 @@ const PlankHistory: React.FC<PlankHistoryProps> = ({ onViewAll }) => {
                 </ul>
                 {onViewAll && (
                     <div className="p-4 border-t text-center">
-                        
+                        <button
+                            className="text-plank-blue font-medium hover:underline"
+                            onClick={onViewAll}
+                        >
+                            View full history
+                        </button>
                     </div>
                 )}
             </CardContent>

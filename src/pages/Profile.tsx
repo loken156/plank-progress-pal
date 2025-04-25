@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -12,63 +12,60 @@ import { toast } from "@/components/ui/sonner";
 import { useJoinedChallenges } from "@/hooks/useJoinedChallenges"; // Import the custom hook
 
 const ProfilePage: React.FC = () => {
+  const { id: profileId } = useParams<{ id: string }>();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [planks, setPlanks] = useState<PlankEntry[]>([]);
-  const [userId, setUserId] = useState<string>("");
+  const [loggedInId, setLoggedInId] = useState<string>("");
   const navigate = useNavigate();
 
   // Use the custom hook for joined challenges
-  const { joinedChallenges, loading: challengesLoading, error: challengesError } = useJoinedChallenges(userId);
+  const { joinedChallenges, loading: challengesLoading, error: challengesError } = useJoinedChallenges(loggedInId);
 
   useEffect(() => {
+    if (!profileId) {
+      // no id in URL → redirect to your own profile
+      navigate("/profile/" + loggedInId);
+      return;
+    }
+
     async function load() {
       // 1) Get logged-in user
       const {
         data: { user },
         error: userErr,
       } = await supabase.auth.getUser();
-
       if (userErr || !user) {
-        navigate("/login");
+        navigate("/auth");
         return;
       }
-      setUserId(user.id);
+      setLoggedInId(user.id);
 
-      // 2) Fetch profile with proper aliasing
+      // 2) Fetch the requested user's profile
       const { data: row, error } = await supabase
         .from("profiles")
         .select("full_name,username,profile_image,bio,join_date,followers_count")
-        .eq("id", user.id)
+        .eq("id", profileId)
         .single();
 
       if (error || !row) {
-        toast.error("Kunde inte ladda din profil.");
+        toast.error("Could not load that profile.");
         return;
       }
 
-      // 3) map into camelCase interface
-      const prof: ProfileData = {
+      setProfile({
         name: row.full_name,
         username: row.username,
         profileImage: row.profile_image,
         bio: row.bio,
         joinDate: row.join_date,
         followersCount: row.followers_count,
-      };
+      });
 
-      setProfile(prof);
-
-      if (!prof) {
-        toast.error("Kunde inte ladda din profil.");
-      } else {
-        setProfile(prof);
-      }
-
-      // 4) Fetch last 5 planks
+      // 3) Fetch last 5 planks for that user
       const { data: rawPlanks, error: plankErr } = await supabase
         .from<{ id: number; plank_date: string; duration_s: number }>("planks")
         .select("id, plank_date, duration_s")
-        .eq("user_id", user.id)
+        .eq("user_id", profileId)
         .order("plank_date", { ascending: false })
         .limit(5);
 
@@ -77,7 +74,7 @@ const ProfilePage: React.FC = () => {
         return;
       }
 
-      // 5) Map into UI shape
+      // 4) Map into UI shape (day labels in English)
       const mapped = (rawPlanks || []).map((p) => {
         const d = new Date(p.plank_date);
         const today = new Date();
@@ -86,15 +83,18 @@ const ProfilePage: React.FC = () => {
 
         let dayLabel: string;
         if (d.toDateString() === today.toDateString()) {
-          dayLabel = "Idag";
+          dayLabel = "Today";
         } else if (d.toDateString() === yesterday.toDateString()) {
-          dayLabel = "Igår";
+          dayLabel = "Yesterday";
         } else {
-          const wd = d.toLocaleDateString("sv-SE", { weekday: "long" });
-          dayLabel = wd.charAt(0).toUpperCase() + wd.slice(1);
+          dayLabel =
+            d.toLocaleDateString("en-US", { weekday: "long" }).replace(
+              /^\w/,
+              (c) => c.toUpperCase()
+            );
         }
 
-        const dateDisplay = d.toLocaleDateString("sv-SE", {
+        const dateDisplay = d.toLocaleDateString("en-US", {
           day: "numeric",
           month: "long",
         });
@@ -106,15 +106,15 @@ const ProfilePage: React.FC = () => {
           time: p.duration_s,
         };
       });
-
       setPlanks(mapped);
     }
 
     load();
-  }, [navigate]);
+  }, [profileId, loggedInId, navigate]);
 
+  // Only allow profile editing if it’s **your** profile
   const handleSave = async (updates: Partial<ProfileData>) => {
-    if (!profile || !userId) return;
+    if (!profileId || loggedInId !== profileId) return;
 
     const { error } = await supabase
       .from("profiles")
@@ -123,18 +123,18 @@ const ProfilePage: React.FC = () => {
         profile_image: updates.profileImage,
         bio: updates.bio,
       })
-      .eq("id", userId);
+      .eq("id", profileId);
 
     if (error) {
-      toast.error("Kunde inte spara ändringar.");
+      toast.error("Could not save changes.");
     } else {
-      setProfile({ ...profile, ...updates });
-      toast.success("Profil uppdaterad!");
+      setProfile((p) => p && { ...p, ...updates });
+      toast.success("Profile updated!");
     }
   };
 
   if (!profile) {
-    return <div className="p-8 text-center">Laddar din profil…</div>;
+    return <div className="p-8 text-center">Loading profile…</div>;
   }
 
   return (
@@ -142,25 +142,25 @@ const ProfilePage: React.FC = () => {
       <Header />
 
       <main className="flex-grow bg-gray-50">
-        <ProfileHeader data={profile} onSave={handleSave} />
+        <ProfileHeader data={profile} onSave={handleSave} canEdit={loggedInId === profileId} />
 
         <div className="container mx-auto py-8 px-6 space-y-12">
           <section>
-            <h2 className="text-xl font-semibold mb-4">Min Statistik</h2>
-            <UserStats />
+            <h2 className="text-xl font-semibold mb-4">My Statistics</h2>
+            <UserStats userId={profileId} />
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-4">Plankhistorik</h2>
+            <h2 className="text-xl font-semibold mb-4">Plank History</h2>
             <PlankHistory
-              entries={planks}
+              userId={profileId}
               onViewAll={() => navigate("/history")}
             />
           </section>
 
           <section>
             <h2 className="text-xl font-semibold mb-4">My Progress</h2>
-            <ProgressGraph />
+            <ProgressGraph userId={profileId} />
           </section>
 
           <section>
@@ -195,7 +195,6 @@ const ProfilePage: React.FC = () => {
               </div>
             )}
           </section>
-
         </div>
       </main>
 
