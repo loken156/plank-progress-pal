@@ -112,10 +112,10 @@
   .plank-card {
     @apply bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200;
   }
-  
-  .plank-btn {
-    @apply rounded-full px-6 py-3 font-semibold transition-all duration-200;
-  }
+
+    .plank-btn {
+        @apply rounded-full text-white hover:scale-105 px-6 py-3 font-semibold transition-all duration-200;
+    }
   
   .plank-btn-primary {
     @apply bg-plank-blue text-white hover:bg-opacity-90 plank-btn;

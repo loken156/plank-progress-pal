@@ -57,7 +57,7 @@ const ProfilePage: React.FC = () => {
 
 
 
-      if (profErr || !prof) {
+      if (!prof) {
         toast.error("Kunde inte ladda din profil.");
       } else {
         setProfile(prof);
@@ -155,11 +155,6 @@ const ProfilePage: React.FC = () => {
               entries={planks}
               onViewAll={() => navigate("/history")}
             />
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold mb-4">Mina Prestationer</h2>
-            <AchievementBadges />
           </section>
 
           <section>
