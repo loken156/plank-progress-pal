@@ -110,7 +110,7 @@
 }
 
 .cardFooter {
-  @apply p-4 pt-2 border-t;
+    @apply p-4 pt-2 flex items-center gap-4;
 }
 
 .joinButton {
