@@ -24,7 +24,10 @@ const Auth: React.FC = () => {
           email,
           password,
           options: {
-            data: { username: email.split('@')[0] }
+            data: {
+              username: email.split('@')[0],
+              role: 'user' // Default role for new users
+            }
           }
         });
 

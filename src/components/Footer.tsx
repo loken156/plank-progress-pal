@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 
@@ -15,26 +14,26 @@ const Footer = () => {
               <h3 className="text-lg font-poppins font-bold gradient-text">Rank Your Plank</h3>
             </Link>
             <p className="text-gray-600 text-sm">
-              Kasta dig in i en värld av utmaningar, prestationer och gemenskap. 
-              Med Rank Your Plank kan du logga din dagliga planka, delta i event och hålla koll på din utveckling.
+              Dive into a world of challenges, achievements, and community.
+              With Rank Your Plank, you can log your daily plank, participate in events, and track your progress.
             </p>
           </div>
           <div>
-            <h4 className="font-semibold mb-4">Länkar</h4>
+            <h4 className="font-semibold mb-4">Links</h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link to="/" className="text-gray-600 hover:text-plank-blue transition-colors">Hem</Link>
+                <Link to="/" className="text-gray-600 hover:text-plank-blue transition-colors">Home</Link>
               </li>
               <li>
-                <Link to="/challenges" className="text-gray-600 hover:text-plank-blue transition-colors">Utmaningar</Link>
+                <Link to="/challenges" className="text-gray-600 hover:text-plank-blue transition-colors">Challenges</Link>
               </li>
               <li>
-                <Link to="/profile" className="text-gray-600 hover:text-plank-blue transition-colors">Min Profil</Link>
+                <Link to="/profile" className="text-gray-600 hover:text-plank-blue transition-colors">My Profile</Link>
               </li>
             </ul>
           </div>
           <div>
-            <h4 className="font-semibold mb-4">Följ oss</h4>
+            <h4 className="font-semibold mb-4">Follow Us</h4>
             <div className="flex space-x-4">
               <a href="#" className="text-gray-600 hover:text-plank-blue transition-colors">
                 <span className="sr-only">Facebook</span>
@@ -58,7 +57,7 @@ const Footer = () => {
           </div>
         </div>
         <div className="mt-8 pt-6 border-t border-gray-200 text-center text-sm text-gray-500">
-          &copy; {new Date().getFullYear()} Rank Your Plank. Alla rättigheter förbehållna.
+          &copy; {new Date().getFullYear()} Rank Your Plank. All rights reserved.
         </div>
       </div>
     </footer>

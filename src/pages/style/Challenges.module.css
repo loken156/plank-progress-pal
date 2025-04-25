@@ -1,0 +1,130 @@
+/* Challenges.module.css */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.hero {
+  background: linear-gradient(to bottom right, #00bcd4, #4caf50);
+  color: white;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+/* New class for the text block container */
+.heroContentWrapper {
+  max-width: 48rem;
+  /* Equivalent to Tailwind's max-w-3xl */
+  margin-left: auto;
+  /* Center the block */
+  margin-right: auto;
+  /* Center the block */
+}
+
+.hero h1 {
+  font-size: 3rem;
+  font-weight: 700;
+}
+
+.hero p {
+  font-size: 1.25rem;
+  margin-bottom: 30px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  /* Default: 1 column */
+  gap: 1.5rem;
+  /* Corresponds to gap-6 */
+}
+
+/* Medium screens and up */
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    /* md:grid-cols-2 */
+  }
+}
+
+/* Large screens and up */
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    /* lg:grid-cols-3 */
+  }
+}
+
+.challengeCard {
+  @apply bg-white rounded-lg shadow-md overflow-hidden h-full flex flex-col transition-transform duration-300 ease-in-out;
+}
+
+.challengeCard:hover {
+  transform: scale(1.03);
+}
+
+.cardImageContainer {
+  @apply h-48 overflow-hidden;
+}
+
+.cardImage {
+  @apply w-full h-full object-cover transition-transform duration-300;
+}
+
+.cardHeader {
+  @apply p-4 pb-2 flex justify-between items-start;
+}
+
+.cardTitle {
+  @apply text-xl font-semibold;
+}
+
+.cardContent {
+  @apply p-4 flex-grow;
+}
+
+.cardDescription {
+  @apply text-gray-600 text-sm mb-4;
+}
+
+.cardMeta {
+  @apply flex flex-wrap gap-y-2 gap-x-4 text-sm text-gray-500;
+}
+
+.metaItem {
+  @apply flex items-center;
+}
+
+.metaIcon {
+  @apply h-4 w-4 mr-1;
+}
+
+.metaIconBlue {
+  @apply text-plank-blue;
+}
+
+.metaIconGreen {
+  @apply text-plank-green;
+}
+
+.cardFooter {
+  @apply p-4 pt-2 border-t;
+}
+
+.joinButton {
+  @apply w-full;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.mt-16 {
+  margin-top: 4rem;
+}
+
+.mb-8 {
+  margin-bottom: 2rem;
+}
