@@ -1,5 +1,6 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import PlankTimer from '@/components/PlankTimer';
@@ -9,11 +10,21 @@ import AchievementBadges from '@/components/AchievementBadges';
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const scrollToSection = (sectionId: string) => {
     const section = document.getElementById(sectionId);
     if (section) {
       section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const handleGetStartedClick = () => {
+    if (user) {
+      scrollToSection('timer-stats-section');
+    } else {
+      navigate('/auth');
     }
   };
 
@@ -35,11 +46,13 @@ const Index = () => {
               While AI slaves away, submit your plank of the day!
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Link to="/auth">
-                <Button size="lg" className="bg-white text-plank-blue hover:bg-gray-100">
-                  Get Started
-                </Button>
-              </Link>
+              <Button
+                size="lg"
+                className="bg-white text-plank-blue hover:bg-gray-100"
+                onClick={handleGetStartedClick}
+              >
+                Get Started
+              </Button>
               <Button
                 size="lg"
                 className="bg-white text-plank-blue hover:bg-gray-100"
