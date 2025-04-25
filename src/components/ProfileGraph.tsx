@@ -41,29 +41,28 @@ interface DataPoint {
     bestTime: number;  // seconds
 }
 
-const ProgressGraph: React.FC = () => {
+interface ProgressGraphProps {
+    userId: string;
+}
+
+const ProfileGraph: React.FC<ProgressGraphProps> = ({ userId }) => {
     const [dataPoints, setDataPoints] = useState<DataPoint[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (!userId) {
+            setLoading(false);
+            return;
+        }
+
         async function load() {
             setLoading(true);
-            // 1) get current user
-            const {
-                data: { user },
-                error: userErr,
-            } = await supabase.auth.getUser();
-            if (userErr || !user) {
-                console.error(userErr);
-                setLoading(false);
-                return;
-            }
 
-            // 2) fetch all planks for this user
+            // fetch all planks for the given userId
             const { data, error } = await supabase
                 .from<PlankRow>("planks")
                 .select("plank_date, duration_s")
-                .eq("user_id", user.id);
+                .eq("user_id", userId);
 
             if (error) {
                 console.error(error);
@@ -71,10 +70,10 @@ const ProgressGraph: React.FC = () => {
                 return;
             }
 
-            // 3) group by date and pick max(duration_s)
+            // group by date and pick max(duration_s)
             const grouped: Record<string, number[]> = {};
-            data!.forEach((row) => {
-                if (!grouped[row.plank_date]) grouped[row.plank_date] = [];
+            (data || []).forEach((row) => {
+                grouped[row.plank_date] = grouped[row.plank_date] || [];
                 grouped[row.plank_date].push(row.duration_s);
             });
 
@@ -84,8 +83,7 @@ const ProgressGraph: React.FC = () => {
                     bestTime: Math.max(...durations),
                 }))
                 .sort(
-                    (a, b) =>
-                        new Date(a.date).getTime() - new Date(b.date).getTime()
+                    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
                 );
 
             setDataPoints(points);
@@ -93,7 +91,7 @@ const ProgressGraph: React.FC = () => {
         }
 
         load();
-    }, []);
+    }, [userId]);
 
     if (loading) {
         return (
@@ -111,9 +109,9 @@ const ProgressGraph: React.FC = () => {
         );
     }
 
-    // 4) Build chart.js data
+    // chart.js data
     const labels = dataPoints.map((p) =>
-        new Date(p.date).toLocaleDateString("sv-SE", {
+        new Date(p.date).toLocaleDateString("en-US", {
             day: "numeric",
             month: "short",
         })
@@ -161,4 +159,4 @@ const ProgressGraph: React.FC = () => {
     );
 };
 
-export default ProgressGraph;
+export default ProfileGraph;

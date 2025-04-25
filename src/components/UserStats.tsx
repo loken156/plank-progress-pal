@@ -9,66 +9,114 @@ interface UserStatsRow {
     best_time_seconds: number | null;
     best_time_date: string | null;
     total_planks: number;
-    monthly_rank: number | null;
-    monthly_percentile: number | null;
 }
 
-const UserStats: React.FC = () => {
-    const [stats, setStats] = useState<UserStatsRow | null>(null);
-    const [loading, setLoading] = useState(true);
+interface LeaderboardEntry {
+    user_id: string;
+    rank: number;
+}
 
+interface UserStatsProps {
+    userId?: string;
+}
+
+const UserStats: React.FC<UserStatsProps> = ({ userId }) => {
+    const [stats, setStats] = useState<UserStatsRow | null>(null);
+    const [loadingStats, setLoadingStats] = useState(true);
+    const [monthlyRank, setMonthlyRank] = useState<number | null>(null);
+    const [monthlyPercentile, setMonthlyPercentile] = useState<number | null>(null);
+    const [loadingRank, setLoadingRank] = useState(true);
+
+    // 1) load the base stats
     useEffect(() => {
         async function fetchStats() {
+            setLoadingStats(true);
             try {
-                // 1) Get current user
-                const {
-                    data: { user },
-                    error: userErr,
-                } = await supabase.auth.getUser();
-                if (userErr || !user) throw userErr || new Error("No user");
-
-                // 2) Fetch stats row
-                const { data, error } = await supabase
-                    .from<UserStatsRow>("user_stats")
-                    .select("*")
-                    .eq("user_id", user.id)
-                    .single();
-
-                if (error && error.code !== "PGRST116") {
-                    // PGRST116 = no rows found
-                    throw error;
+                let uid = userId;
+                if (!uid) {
+                    const {
+                        data: { user },
+                        error: userErr,
+                    } = await supabase.auth.getUser();
+                    if (userErr || !user) throw userErr || new Error("No user");
+                    uid = user.id;
                 }
 
+                const { data, error } = await supabase
+                    .from<UserStatsRow>("user_stats")
+                    .select(
+                        "current_streak, best_time_seconds, best_time_date, total_planks"
+                    )
+                    .eq("user_id", uid)
+                    .single();
+
+                if (error && error.code !== "PGRST116") throw error;
                 setStats(data);
             } catch (err: any) {
                 console.error(err);
                 toast.error("Could not load statistics.");
             } finally {
-                setLoading(false);
+                setLoadingStats(false);
             }
         }
 
         fetchStats();
-    }, []);
+    }, [userId]);
 
-    if (loading) {
+    // 2) fetch the leaderboard and extract *this* user’s rank & percentile
+    useEffect(() => {
+        async function fetchRank() {
+            setLoadingRank(true);
+            try {
+                const { data: board, error } = await supabase
+                    .rpc<LeaderboardEntry[]>("get_monthly_leaderboard");
+                if (error) throw error;
+
+                let uid = userId;
+                if (!uid) {
+                    const {
+                        data: { user },
+                    } = await supabase.auth.getUser();
+                    uid = user!.id;
+                }
+
+                // find the entry for this user
+                const me = board?.find((e) => e.user_id === uid);
+                if (me) {
+                    setMonthlyRank(me.rank);
+                    // percentile = rank / totalCount * 100
+                    setMonthlyPercentile((me.rank / board!.length) * 100);
+                } else {
+                    setMonthlyRank(null);
+                    setMonthlyPercentile(null);
+                }
+            } catch (err) {
+                console.error(err);
+                toast.error("Could not load monthly ranking.");
+            } finally {
+                setLoadingRank(false);
+            }
+        }
+
+        fetchRank();
+    }, [userId]);
+
+    if (loadingStats || loadingRank) {
         return <div className="text-center py-8">Loading statistics…</div>;
     }
 
-    // If no stats row yet, show placeholders
+    // default placeholders
     const {
         current_streak = 0,
         best_time_seconds = 0,
         best_time_date,
         total_planks = 0,
-        monthly_rank = 0,
-        monthly_percentile = 0,
     } = stats || {};
 
-    const formatTime = (totalSeconds: number): string => {
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = totalSeconds % 60;
-        return `${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
+    const formatTime = (sec: number) => {
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return `${m}:${s < 10 ? "0" + s : s}`;
     };
 
     const formattedBestDate = best_time_date
@@ -78,9 +126,9 @@ const UserStats: React.FC = () => {
         })
         : "–";
 
-    const percentileText =
-        monthly_percentile !== null
-            ? `Within top ${monthly_percentile.toFixed(0)}%`
+    const pctText =
+        monthlyPercentile != null
+            ? `Within top ${monthlyPercentile.toFixed(0)}%`
             : "–";
 
     return (
@@ -144,9 +192,11 @@ const UserStats: React.FC = () => {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">#{monthly_rank}</div>
+                    <div className="text-2xl font-bold">
+                        {monthlyRank != null ? `#${monthlyRank}` : "–"}
+                    </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                        {percentileText}
+                        {pctText}
                     </p>
                 </CardContent>
             </Card>
