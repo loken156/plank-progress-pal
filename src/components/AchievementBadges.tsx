@@ -46,18 +46,18 @@ const AchievementBadges: React.FC = () => {
         const { data, error } = await supabase
             .from<BadgeRow>("badges")
             .select(`
-        id,
-        name,
-        icon_url,
-        description,
-        criteria,
-        user_badges!inner (
-          progress,
-          max_progress,
-          earned_at,
-          user_id
-        )
-      `)
+                id,
+                name,
+                icon_url,
+                description,
+                criteria,
+                user_badges!inner (
+                    progress,
+                    max_progress,
+                    earned_at,
+                    user_id
+                )
+            `)
             .eq("user_badges.user_id", user.id);
 
         if (error) {
@@ -79,7 +79,7 @@ const AchievementBadges: React.FC = () => {
             } = await supabase.auth.getUser();
             if (!user) return;
 
-            // create a channel listening to ANY change on user_badges for this user
+            // subscribe to any changes on user_badges for this user
             chan = supabase
                 .channel("user_badges_changes")
                 .on(
@@ -99,21 +99,20 @@ const AchievementBadges: React.FC = () => {
 
         return () => {
             if (chan) {
-                // remove the subscription when the component unmounts
                 supabase.removeChannel(chan);
             }
         };
     }, [loadBadges]);
 
     if (loading) {
-        return <div className="text-center py-6">Loading achievments…</div>;
+        return <div className="text-center py-6">Loading achievements…</div>;
     }
 
     return (
         <Card className="plank-card">
             <CardHeader className="pb-2 border-b">
                 <CardTitle className="text-lg font-poppins">
-                    Prestationer och Utmärkelser
+                    Achievements and Awards
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-4">
@@ -122,7 +121,6 @@ const AchievementBadges: React.FC = () => {
                         {badges.map((b) => {
                             const ub = b.user_badges!;
                             const achieved = Boolean(ub.earned_at);
-                            // percent for any numeric badge (count, streak or best_time)
                             const pct = ub.max_progress
                                 ? Math.min(100, (ub.progress / ub.max_progress) * 100)
                                 : 0;
@@ -144,7 +142,7 @@ const AchievementBadges: React.FC = () => {
                                                 {b.name}
                                             </span>
 
-                                            {/* show bar for anything with max_progress */}
+                                            {/* show bar for any badge with a max_progress */}
                                             {!achieved && ub.max_progress > 0 && (
                                                 <div className="w-full h-1 bg-gray-200 rounded-full mt-1 overflow-hidden">
                                                     <div
@@ -163,9 +161,9 @@ const AchievementBadges: React.FC = () => {
                                             </p>
                                             {achieved ? (
                                                 <p className="text-xs text-plank-green mt-1">
-                                                    Uppnådd:{" "}
+                                                    Achieved:{" "}
                                                     {new Date(ub.earned_at!).toLocaleDateString(
-                                                        "sv-SE",
+                                                        "en-US",
                                                         {
                                                             day: "numeric",
                                                             month: "long",
