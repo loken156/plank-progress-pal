@@ -137,13 +137,13 @@ const Challenges = () => {
                       </div>
                       <div className={styles.metaItem}>
                         <Users className={`${styles.metaIcon} ${styles.metaIconGreen}`} />
-                        <span>{challenge.participants} deltagare</span>
+                        <span>{challenge.participants} Participants</span>
                       </div>
                     </div>
                   </CardContent>
                   <CardFooter className={styles.cardFooter}>
                     <Button onClick={() => handleJoinChallenge(challenge.id)} className={styles.joinButton}>
-                      Delta i utmaningen
+                      Join the challenge
                     </Button>
                   </CardFooter>
                 </Card>
