@@ -19,7 +19,7 @@ const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
 
   // Use the custom hook for joined challenges
-  const { joinedChallenges, loading: challengesLoading, error: challengesError } = useJoinedChallenges(loggedInId);
+  const { joinedChallenges, loading: challengesLoading, error: challengesError } = useJoinedChallenges(profileId);
 
   useEffect(() => {
     if (!profileId) {
