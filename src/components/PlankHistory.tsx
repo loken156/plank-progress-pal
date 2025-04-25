@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+ï»¿import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,8 +6,8 @@ import { Clock } from "lucide-react";
 
 export interface PlankEntry {
     id: number;
-    date: string;  // e.g. "22 april"
-    day: string;   // "Idag" | "Igår" | "Måndag" | …
+    date: string;  // e.g. "April 22"
+    day: string;   // "Today" | "Yesterday" | "Monday" | â€¦
     time: number;  // in seconds
 }
 
@@ -55,15 +55,15 @@ const PlankHistory: React.FC<PlankHistoryProps> = ({ onViewAll }) => {
 
                     let dayLabel: string;
                     if (d.toDateString() === today.toDateString()) {
-                        dayLabel = "Idag";
+                        dayLabel = "Today";
                     } else if (d.toDateString() === yesterday.toDateString()) {
-                        dayLabel = "Igår";
+                        dayLabel = "Yesterday";
                     } else {
-                        const wd = d.toLocaleDateString("sv-SE", { weekday: "long" });
+                        const wd = d.toLocaleDateString("en-US", { weekday: "long" });
                         dayLabel = wd.charAt(0).toUpperCase() + wd.slice(1);
                     }
 
-                    const dateDisplay = d.toLocaleDateString("sv-SE", {
+                    const dateDisplay = d.toLocaleDateString("en-US", {
                         day: "numeric",
                         month: "long",
                     });
@@ -79,7 +79,7 @@ const PlankHistory: React.FC<PlankHistoryProps> = ({ onViewAll }) => {
                 setEntries(mapped);
             } catch (err: any) {
                 console.error(err);
-                toast.error("Kunde inte ladda plankhistorik.");
+                toast.error("Could not load plank history.");
             } finally {
                 setLoading(false);
             }
@@ -94,10 +94,10 @@ const PlankHistory: React.FC<PlankHistoryProps> = ({ onViewAll }) => {
                 <CardHeader className="border-b pb-3">
                     <CardTitle className="text-lg flex items-center">
                         <Clock className="h-5 w-5 text-plank-blue mr-2" />
-                        Senaste Plankor
+                        Latest Planks
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 text-center">Laddar plankor…</CardContent>
+                <CardContent className="p-6 text-center">Loading planksâ€¦</CardContent>
             </Card>
         );
     }
@@ -107,7 +107,7 @@ const PlankHistory: React.FC<PlankHistoryProps> = ({ onViewAll }) => {
             <CardHeader className="border-b pb-3">
                 <CardTitle className="text-lg flex items-center">
                     <Clock className="h-5 w-5 text-plank-blue mr-2" />
-                    Senaste Plankor
+                    Latest Planks
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -132,12 +132,7 @@ const PlankHistory: React.FC<PlankHistoryProps> = ({ onViewAll }) => {
                 </ul>
                 {onViewAll && (
                     <div className="p-4 border-t text-center">
-                        <button
-                            className="text-plank-blue font-medium hover:underline"
-                            onClick={onViewAll}
-                        >
-                            Visa hela historiken
-                        </button>
+                        
                     </div>
                 )}
             </CardContent>

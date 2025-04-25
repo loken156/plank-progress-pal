@@ -158,11 +158,6 @@ const ProfilePage: React.FC = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-4">Mina Prestationer</h2>
-            <AchievementBadges />
-          </section>
-
-          <section>
             <h2 className="text-xl font-semibold mb-4">Min Utveckling</h2>
             <ProgressGraph />
           </section>

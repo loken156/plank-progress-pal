@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarCheck, Clock, Calendar, TrendingUp } from "lucide-react";
-import { toast } from "@/components/ui/sonner";
 
 interface UserStatsRow {
     current_streak: number;
@@ -42,7 +42,7 @@ const UserStats: React.FC = () => {
                 setStats(data);
             } catch (err: any) {
                 console.error(err);
-                toast.error("Kunde inte ladda statistik.");
+                toast.error("Could not load statistics.");
             } finally {
                 setLoading(false);
             }
@@ -52,7 +52,7 @@ const UserStats: React.FC = () => {
     }, []);
 
     if (loading) {
-        return <div className="text-center py-8">Laddar statistik…</div>;
+        return <div className="text-center py-8">Loading statistics…</div>;
     }
 
     // If no stats row yet, show placeholders
@@ -72,7 +72,7 @@ const UserStats: React.FC = () => {
     };
 
     const formattedBestDate = best_time_date
-        ? new Date(best_time_date).toLocaleDateString("sv-SE", {
+        ? new Date(best_time_date).toLocaleDateString("en-US", {
             day: "numeric",
             month: "long",
         })
@@ -80,7 +80,7 @@ const UserStats: React.FC = () => {
 
     const percentileText =
         monthly_percentile !== null
-            ? `Inom topp ${monthly_percentile.toFixed(0)}%`
+            ? `Within top ${monthly_percentile.toFixed(0)}%`
             : "–";
 
     return (
@@ -90,13 +90,13 @@ const UserStats: React.FC = () => {
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
                         <CalendarCheck className="h-4 w-4 text-plank-blue mr-2" />
-                        Nuvarande Streak
+                        Current Streak
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{current_streak} dagar</div>
+                    <div className="text-2xl font-bold">{current_streak} days</div>
                     <p className="text-xs text-muted-foreground mt-1">
-                        {current_streak > 5 ? "Imponerande streak!" : "Fortsätt så!"}
+                        {current_streak > 5 ? "Impressive streak!" : "Keep it up!"}
                     </p>
                 </CardContent>
             </Card>
@@ -106,7 +106,7 @@ const UserStats: React.FC = () => {
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
                         <Clock className="h-4 w-4 text-plank-green mr-2" />
-                        Bästa Tid
+                        Best Time
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -114,7 +114,7 @@ const UserStats: React.FC = () => {
                         {formatTime(best_time_seconds)}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                        Uppnådd den {formattedBestDate}
+                        Achieved on {formattedBestDate}
                     </p>
                 </CardContent>
             </Card>
@@ -124,13 +124,13 @@ const UserStats: React.FC = () => {
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
                         <Calendar className="h-4 w-4 text-plank-blue mr-2" />
-                        Totala Plankor
+                        Total Planks
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">{total_planks}</div>
                     <p className="text-xs text-muted-foreground mt-1">
-                        Sedan du började
+                        Since you started
                     </p>
                 </CardContent>
             </Card>
@@ -140,7 +140,7 @@ const UserStats: React.FC = () => {
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
                         <TrendingUp className="h-4 w-4 text-plank-green mr-2" />
-                        Månadens Ranking
+                        Monthly Ranking
                     </CardTitle>
                 </CardHeader>
                 <CardContent>

@@ -55,100 +55,31 @@ const PlankTimer: React.FC = () => {
     const handleComplete = async (): Promise<void> => {
         setIsActive(false);
 
-        // 1) Get current user
         const {
             data: { user },
             error: userErr,
         } = await supabase.auth.getUser();
         if (userErr || !user) {
-            toast.error("Du måste vara inloggad för att spara plankan.");
+            toast.error("You must be logged in.");
             return;
         }
 
-        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-
-        // 2) Insert plank record
+        // only insert the plank; the trigger will maintain stats
         const { error: plankErr } = await supabase
             .from("planks")
             .insert({
                 user_id: user.id,
-                plank_date: today,
                 duration_s: seconds,
+                // omit plank_date if you’ve set DEFAULT CURRENT_DATE in your schema
             });
+
         if (plankErr) {
             console.error(plankErr);
-            toast.error("Kunde inte spara plankan.");
+            toast.error("Could not save plank.");
             return;
         }
 
-        // 3) Fetch existing stats (if any)
-        const { data: oldStats, error: statsErr } = await supabase
-            .from<StatsRow>("user_stats")
-            .select("*")
-            .eq("user_id", user.id)
-            .single();
-
-        if (statsErr && statsErr.code !== "PGRST116") {
-            console.error(statsErr);
-            toast.error("Kunde inte läsa dina statistik.");
-            return;
-        }
-
-        // 4) Compute new values
-        const prevStreak = oldStats?.current_streak ?? 0;
-        let newStreak = 1;
-
-        // check if user planked yesterday
-        if (oldStats && prevStreak > 0) {
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yDate = yesterday.toISOString().split("T")[0];
-
-            const { data: yEntry, error: yErr } = await supabase
-                .from("planks")
-                .select("plank_date")
-                .eq("user_id", user.id)
-                .eq("plank_date", yDate)
-                .maybeSingle();
-
-            if (yEntry) {
-                newStreak = prevStreak + 1;
-            }
-        }
-
-        const newTotal = (oldStats?.total_planks ?? 0) + 1;
-
-        // best time?
-        let bestSeconds = oldStats?.best_time_seconds ?? 0;
-        let bestDate = oldStats?.best_time_date ?? null;
-        if (seconds > bestSeconds) {
-            bestSeconds = seconds;
-            bestDate = today;
-        }
-
-        // 5) Upsert back into user_stats
-        const { error: upsertErr } = await supabase
-            .from("user_stats")
-            .upsert(
-                {
-                    user_id: user.id,
-                    current_streak: newStreak,
-                    best_time_seconds: bestSeconds,
-                    best_time_date: bestDate,
-                    total_planks: newTotal,
-                    monthly_rank: oldStats?.monthly_rank ?? null,
-                    monthly_percentile: oldStats?.monthly_percentile ?? null,
-                },
-                { onConflict: "user_id" }
-            );
-
-        if (upsertErr) {
-            console.error(upsertErr);
-            toast.error("Kunde inte uppdatera din statistik.");
-            return;
-        }
-
-        toast.success("Planka sparad!");
+        toast.success("Plank saved!");
         setIsCompleted(true);
     };
 
@@ -156,7 +87,7 @@ const PlankTimer: React.FC = () => {
         <Card className="plank-card w-full max-w-md mx-auto overflow-hidden">
             <div className="bg-gradient-to-r from-plank-blue to-plank-green p-4 text-white">
                 <h2 className="text-xl font-bold font-poppins text-center">
-                    Dagens Planka
+                    Today's Plank
                 </h2>
             </div>
             <CardContent className="p-6">
@@ -166,13 +97,13 @@ const PlankTimer: React.FC = () => {
                         <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-green-100 mb-4">
                             <CheckCircle className="w-12 h-12 text-plank-green" />
                         </div>
-                        <h3 className="text-2xl font-bold mb-2">Bra jobbat!</h3>
+                        <h3 className="text-2xl font-bold mb-2">Well done!</h3>
                         <p className="text-gray-600 mb-4">
-                            Du plankade i {formatTime(seconds)}
+                            You planked for {formatTime(seconds)}
                         </p>
-                        <Button className="plank-btn-outline" onClick={handleReset}>
+                        <Button className="plank-btn-outline hover:text-white hover:scale-105" onClick={handleReset}>
                             <RotateCcw className="mr-2 h-4 w-4" />
-                            Ny planka
+                            New plank
                         </Button>
                     </div>
                 ) : (
@@ -204,7 +135,7 @@ const PlankTimer: React.FC = () => {
                                     onClick={handleStart}
                                 >
                                     <Play className="mr-2 h-4 w-4" />
-                                    Starta
+                                    Start
                                 </Button>
                             ) : (
                                 <Button
@@ -212,18 +143,18 @@ const PlankTimer: React.FC = () => {
                                     onClick={handlePause}
                                 >
                                     <Pause className="mr-2 h-4 w-4" />
-                                    Pausa
+                                    Pause
                                 </Button>
                             )}
 
                             {seconds > 0 && (
                                 <>
                                     <Button
-                                        className="plank-btn-outline flex-grow"
+                                        className="plank-btn-outline flex-grow  "
                                         onClick={handleReset}
                                     >
                                         <RotateCcw className="mr-2 h-4 w-4" />
-                                        Återställ
+                                        Reset
                                     </Button>
 
                                     {!isActive && (
@@ -232,7 +163,7 @@ const PlankTimer: React.FC = () => {
                                             onClick={handleComplete}
                                         >
                                             <CheckCircle className="mr-2 h-4 w-4" />
-                                            Spara planka
+                                            Save plank
                                         </Button>
                                     )}
                                 </>

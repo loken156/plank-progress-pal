@@ -35,7 +35,12 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ data, onSave }) => {
     // make sure form.profileImage has initial value when entering edit mode
     useEffect(() => {
         if (isEditing) {
-            setForm({ profileImage: data.profileImage, name: data.name, username: data.username, bio: data.bio });
+            setForm({
+                profileImage: data.profileImage,
+                name: data.name,
+                username: data.username,
+                bio: data.bio,
+            });
         }
     }, [isEditing, data]);
 
@@ -57,7 +62,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ data, onSave }) => {
                 error: userErr,
             } = await supabase.auth.getUser();
             if (userErr || !user) {
-                throw userErr || new Error("Du måste vara inloggad");
+                throw userErr || new Error("You must be logged in");
             }
 
             // 2) Build a filename inside the bucket (no "avatars/" prefix)
@@ -81,15 +86,14 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ data, onSave }) => {
                 ...f,
                 profileImage: urlData.publicUrl,
             }));
-            toast.success("Profilbild uppladdad!");
+            toast.success("Profile picture uploaded!");
         } catch (err: any) {
             console.error(err);
-            toast.error(err.message || "Kunde inte ladda upp bilden.");
+            toast.error(err.message || "Could not upload the image.");
         } finally {
             setUploading(false);
         }
     }
-
 
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();
@@ -120,19 +124,19 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ data, onSave }) => {
                                 <div className="flex items-center">
                                     <Calendar className="h-4 w-4 mr-1 opacity-70" />
                                     <span className="text-sm">
-                                        Medlem sedan {data.joinDate}
+                                        Member since {data.joinDate}
                                     </span>
                                 </div>
                                 <div className="flex items-center">
                                     <User className="h-4 w-4 mr-1 opacity-70" />
                                     <span className="text-sm">
-                                        {data.followersCount} Följare
+                                        {data.followersCount} Followers
                                     </span>
                                 </div>
                             </div>
                         </div>
                         <Button variant="secondary" onClick={() => setIsEditing(true)}>
-                            Redigera profil
+                            Edit Profile
                         </Button>
                     </div>
                 ) : (
@@ -149,7 +153,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ data, onSave }) => {
                             >
                                 <img
                                     src={form.profileImage}
-                                    alt="Profilbild"
+                                    alt="Profile picture"
                                     className="w-full h-full object-cover"
                                 />
                             </div>
@@ -165,13 +169,13 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ data, onSave }) => {
                         {/* Name, username, bio */}
                         <Input
                             name="name"
-                            placeholder="Fullständigt namn"
+                            placeholder="Full name"
                             value={form.name}
                             onChange={handleChange}
                         />
                         <Input
                             name="username"
-                            placeholder="Användarnamn"
+                            placeholder="Username"
                             value={form.username}
                             onChange={handleChange}
                         />
@@ -184,9 +188,9 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ data, onSave }) => {
                         />
 
                         <div className="flex gap-2">
-                            <Button type="submit">Spara</Button>
+                            <Button type="submit">Save</Button>
                             <Button variant="ghost" onClick={() => setIsEditing(false)}>
-                                Avbryt
+                                Cancel
                             </Button>
                         </div>
                     </form>
