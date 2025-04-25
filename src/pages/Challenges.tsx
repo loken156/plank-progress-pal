@@ -91,6 +91,10 @@ const Challenges = () => {
     }
   };
 
+  const today = new Date();
+  // Set hours to 0 to compare dates only (optional, depends on desired precision)
+  today.setHours(0, 0, 0, 0);
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -121,39 +125,46 @@ const Challenges = () => {
         {/*   <div className={styles.container}> */}
         <h2 className="text-2xl font-bold mb-8">Current Challenges</h2>
         <div className={styles.grid}>
-          {challenges.filter(challenge => challenge.isActive).map((challenge) => (
-            <Card key={challenge.id} className={styles.challengeCard}>
-              <div className={styles.cardImageContainer}>
-                <img
-                  src={challenge.image}
-                  alt={challenge.title}
-                  className={styles.cardImage}
-                />
-              </div>
-              <CardHeader className={styles.cardHeader}>
-                <CardTitle className={styles.cardTitle}>{challenge.title}</CardTitle>
-                <Badge variant="secondary">{challenge.type}</Badge>
-              </CardHeader>
-              <CardContent className={styles.cardContent}>
-                <p className={styles.cardDescription}>{challenge.description}</p>
-                <div className={styles.cardMeta}>
-                  <div className={styles.metaItem}>
-                    <Calendar className={`${styles.metaIcon} ${styles.metaIconBlue}`} />
-                    <span>{challenge.startDate} - {challenge.endDate}</span>
-                  </div>
-                  <div className={styles.metaItem}>
-                    <Users className={`${styles.metaIcon} ${styles.metaIconGreen}`} />
-                    <span>{challenge.participants} participants</span>
-                  </div>
+          {challenges
+            // Filter by both isActive AND if the end date is today or later
+            .filter(challenge => {
+              const endDate = new Date(challenge.endDate);
+              endDate.setHours(0, 0, 0, 0); // Compare dates only
+              return challenge.isActive && endDate >= today;
+            })
+            .map((challenge) => (
+              <Card key={challenge.id} className={styles.challengeCard}>
+                <div className={styles.cardImageContainer}>
+                  <img
+                    src={challenge.image}
+                    alt={challenge.title}
+                    className={styles.cardImage}
+                  />
                 </div>
-              </CardContent>
-              <CardFooter className={styles.cardFooter}>
-                <Button onClick={() => handleJoinChallenge(challenge.id)} className={styles.joinButton}>
-                  Join Challenge
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+                <CardHeader className={styles.cardHeader}>
+                  <CardTitle className={styles.cardTitle}>{challenge.title}</CardTitle>
+                  <Badge variant="secondary">{challenge.type}</Badge>
+                </CardHeader>
+                <CardContent className={styles.cardContent}>
+                  <p className={styles.cardDescription}>{challenge.description}</p>
+                  <div className={styles.cardMeta}>
+                    <div className={styles.metaItem}>
+                      <Calendar className={`${styles.metaIcon} ${styles.metaIconBlue}`} />
+                      <span>{challenge.startDate} - {challenge.endDate}</span>
+                    </div>
+                    <div className={styles.metaItem}>
+                      <Users className={`${styles.metaIcon} ${styles.metaIconGreen}`} />
+                      <span>{challenge.participants} participants</span>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className={styles.cardFooter}>
+                  <Button onClick={() => handleJoinChallenge(challenge.id)} className={styles.joinButton}>
+                    Join Challenge
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
         </div>
         {/* Closing tag for inner container div if used */}
         {/*   </div> */}
