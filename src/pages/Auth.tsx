@@ -19,24 +19,25 @@ const Auth: React.FC = () => {
 
     try {
       if (isSignup) {
-        // 1) Sign up
+        // Sign up
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
               username: email.split('@')[0],
-              role: 'user' // Default role for new users
+              role: 'user' // Default role
             }
           }
         });
 
         if (error) {
           toast.error(error.message);
+          setIsLoading(false); // Stop loading on error
           return;
         }
 
-        // 2) Seed profile row
+        // Seed profile row
         if (data.user) {
           const { error: profErr } = await supabase
             .from('profiles')
@@ -47,18 +48,20 @@ const Auth: React.FC = () => {
               profile_image: null,
               bio: '',
               join_date: new Date().toISOString().split('T')[0],
-              followers_count: 0
+              followers_count: 0,
+              role: 'user' // Ensure role is added to profile too if needed elsewhere
             });
           if (profErr) {
             console.error('Could not create profile:', profErr);
-            toast.error('Kunde inte skapa profil-datan.');
+            toast.error('Could not create profile data.');
+            // Optionally handle this more gracefully, maybe delete the auth user?
           }
         }
 
-        toast.success('Konto skapat! Kolla din mejl för verifiering.');
-        // Flip back to login form instead of redirecting
+        // Updated Toast Text
+        toast.success('Account created! Check your email for verification.');
         setIsSignup(false);
-        setPassword('');
+        setPassword(''); // Clear password after signup attempt
       } else {
         // Sign in
         const { error } = await supabase.auth.signInWithPassword({
@@ -68,16 +71,20 @@ const Auth: React.FC = () => {
 
         if (error) {
           toast.error(error.message);
+          setIsLoading(false); // Stop loading on error
           return;
         }
 
-        toast.success('Inloggad!');
+        // Updated Toast Text
+        toast.success('Signed in!');
         navigate('/');
       }
     } catch (err) {
       console.error(err);
-      toast.error('Ett oväntat fel uppstod.');
+      // Updated Toast Text
+      toast.error('An unexpected error occurred.');
     } finally {
+      // Ensure isLoading is always set to false eventually
       setIsLoading(false);
     }
   };
@@ -86,8 +93,9 @@ const Auth: React.FC = () => {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8">
         <div>
+          {/* Updated Heading */}
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-            {isSignup ? 'Skapa konto' : 'Logga in på ditt konto'}
+            {isSignup ? 'Create Account' : 'Sign in to your account'}
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleAuth}>
@@ -105,7 +113,8 @@ const Auth: React.FC = () => {
               />
             </div>
             <div>
-              <Label htmlFor="password">Lösenord</Label>
+              {/* Updated Label */}
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -121,11 +130,13 @@ const Auth: React.FC = () => {
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading
                 ? isSignup
-                  ? 'Skapar konto...'
-                  : 'Loggar in...'
+                  // Updated loading text
+                  ? 'Creating account...'
+                  : 'Signing in...'
                 : isSignup
-                  ? 'Registrera'
-                  : 'Logga in'}
+                  // Updated button text
+                  ? 'Sign Up'
+                  : 'Sign In'}
             </Button>
           </div>
 
@@ -135,12 +146,13 @@ const Auth: React.FC = () => {
               className="text-sm text-plank-blue hover:underline"
               onClick={() => {
                 setIsSignup(!isSignup);
-                setPassword('');
+                setPassword(''); // Clear password when toggling
               }}
             >
               {isSignup
-                ? 'Har redan konto? Logga in'
-                : 'Har du inget konto? Registrera'}
+                // Updated toggle text
+                ? 'Already have an account? Sign In'
+                : "Don't have an account? Sign Up"}
             </button>
           </div>
         </form>
