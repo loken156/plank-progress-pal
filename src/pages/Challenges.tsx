@@ -98,60 +98,67 @@ const Challenges = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <div className={`flex flex-col min-h-screen ${styles.container}`}>
-        {/* Hero Section */}
-        <section className={styles.hero}>
-          <div className="container mx-auto">
-            <div className={styles.heroContentWrapper}>
-              <h1 className="text-3xl md:text-4xl font-bold mb-4">Plank Challenges</h1>
-              <p className="text-lg md:text-xl mb-6 opacity-90">
-                Join challenges, compete with others, and improve your plank together with the community!
-              </p>
-            </div>
-          </div>
-        </section>
 
-        <main className="flex-grow py-12 px-6">
-          <div className="container mx-auto">
-            <h2 className="text-2xl font-bold mb-8">Aktuella Utmaningar</h2>
-            <div className={styles.grid}>
-              {challenges.filter(challenge => challenge.isActive).map((challenge) => (
-                <Card key={challenge.id} className={styles.challengeCard}>
-                  <div className={styles.cardImageContainer}>
-                    <img
-                      src={challenge.image}
-                      alt={challenge.title}
-                      className={styles.cardImage}
-                    />
-                  </div>
-                  <CardHeader className={styles.cardHeader}>
-                    <CardTitle className={styles.cardTitle}>{challenge.title}</CardTitle>
-                    <Badge variant="secondary">{challenge.type}</Badge>
-                  </CardHeader>
-                  <CardContent className={styles.cardContent}>
-                    <p className={styles.cardDescription}>{challenge.description}</p>
-                    <div className={styles.cardMeta}>
-                      <div className={styles.metaItem}>
-                        <Calendar className={`${styles.metaIcon} ${styles.metaIconBlue}`} />
-                        <span>{challenge.startDate} - {challenge.endDate}</span>
-                      </div>
-                      <div className={styles.metaItem}>
-                        <Users className={`${styles.metaIcon} ${styles.metaIconGreen}`} />
-                        <span>{challenge.participants} Participants</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className={styles.cardFooter}>
-                    <Button onClick={() => handleJoinChallenge(challenge.id)} className={styles.joinButton}>
-                      Join the challenge
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
+      {/* Hero Section - Moved OUTSIDE the main container div */}
+      <section className={styles.hero}>
+        {/* Use a standard container INSIDE the hero for text centering/max-width */}
+        <div className="container mx-auto">
+          <div className={styles.heroContentWrapper}>
+            <h1 className="text-3xl md:text-4xl font-bold mb-4">Plank Challenges</h1>
+            <p className="text-lg md:text-xl mb-6 opacity-90">
+              Join challenges, compete with others, and improve your plank together with the community!
+            </p>
           </div>
-        </main>
-      </div>
+        </div>
+      </section>
+
+      {/* Main content area - Apply container styling here */}
+      {/* Removed the outer container div that wrapped both hero and main */}
+      {/* Applying container styles directly to main or using an inner div */}
+      <main className={`flex-grow py-12 px-6 ${styles.container}`}> {/* Apply container class to main */}
+        {/* Or keep main plain and wrap content in a container div: */}
+        {/* <main className="flex-grow py-12 px-6"> */}
+        {/*   <div className={styles.container}> */}
+        <h2 className="text-2xl font-bold mb-8">Current Challenges</h2>
+        <div className={styles.grid}>
+          {challenges.filter(challenge => challenge.isActive).map((challenge) => (
+            <Card key={challenge.id} className={styles.challengeCard}>
+              <div className={styles.cardImageContainer}>
+                <img
+                  src={challenge.image}
+                  alt={challenge.title}
+                  className={styles.cardImage}
+                />
+              </div>
+              <CardHeader className={styles.cardHeader}>
+                <CardTitle className={styles.cardTitle}>{challenge.title}</CardTitle>
+                <Badge variant="secondary">{challenge.type}</Badge>
+              </CardHeader>
+              <CardContent className={styles.cardContent}>
+                <p className={styles.cardDescription}>{challenge.description}</p>
+                <div className={styles.cardMeta}>
+                  <div className={styles.metaItem}>
+                    <Calendar className={`${styles.metaIcon} ${styles.metaIconBlue}`} />
+                    <span>{challenge.startDate} - {challenge.endDate}</span>
+                  </div>
+                  <div className={styles.metaItem}>
+                    <Users className={`${styles.metaIcon} ${styles.metaIconGreen}`} />
+                    <span>{challenge.participants} participants</span>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className={styles.cardFooter}>
+                <Button onClick={() => handleJoinChallenge(challenge.id)} className={styles.joinButton}>
+                  Join Challenge
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+        {/* Closing tag for inner container div if used */}
+        {/*   </div> */}
+      </main>
+
       <Footer />
     </div>
   );
