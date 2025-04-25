@@ -9,12 +9,16 @@ import ProfileHeader, { ProfileData } from "@/components/ProfileHeader";
 import PlankHistory, { PlankEntry } from "@/components/PlankHistory";
 import ProgressGraph from "@/components/ProfileGraph";
 import { toast } from "@/components/ui/sonner";
+import { useJoinedChallenges } from "@/hooks/useJoinedChallenges"; // Import the custom hook
 
 const ProfilePage: React.FC = () => {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [planks, setPlanks] = useState<PlankEntry[]>([]);
   const [userId, setUserId] = useState<string>("");
   const navigate = useNavigate();
+
+  // Use the custom hook for joined challenges
+  const { joinedChallenges, loading: challengesLoading, error: challengesError } = useJoinedChallenges(userId);
 
   useEffect(() => {
     async function load() {
@@ -31,31 +35,28 @@ const ProfilePage: React.FC = () => {
       setUserId(user.id);
 
       // 2) Fetch profile with proper aliasing
-        // 1) fetch snake_case columns
-        const { data: row, error } = await supabase
-          .from("profiles")
-          .select("full_name,username,profile_image,bio,join_date,followers_count")
-          .eq("id", user.id)
-          .single();
+      const { data: row, error } = await supabase
+        .from("profiles")
+        .select("full_name,username,profile_image,bio,join_date,followers_count")
+        .eq("id", user.id)
+        .single();
 
-        if (error || !row) {
-          toast.error("Kunde inte ladda din profil.");
-          return;
-        }
+      if (error || !row) {
+        toast.error("Kunde inte ladda din profil.");
+        return;
+      }
 
-        // 2) map into your camelCase interface
-        const prof: ProfileData = {
-          name:           row.full_name,
-          username:       row.username,
-          profileImage:   row.profile_image,
-          bio:            row.bio,
-          joinDate:       row.join_date,
-          followersCount: row.followers_count,
-        };
+      // 3) map into camelCase interface
+      const prof: ProfileData = {
+        name: row.full_name,
+        username: row.username,
+        profileImage: row.profile_image,
+        bio: row.bio,
+        joinDate: row.join_date,
+        followersCount: row.followers_count,
+      };
 
-        setProfile(prof);
-
-
+      setProfile(prof);
 
       if (!prof) {
         toast.error("Kunde inte ladda din profil.");
@@ -63,7 +64,7 @@ const ProfilePage: React.FC = () => {
         setProfile(prof);
       }
 
-      // 3) Fetch last 5 planks
+      // 4) Fetch last 5 planks
       const { data: rawPlanks, error: plankErr } = await supabase
         .from<{ id: number; plank_date: string; duration_s: number }>("planks")
         .select("id, plank_date, duration_s")
@@ -76,7 +77,7 @@ const ProfilePage: React.FC = () => {
         return;
       }
 
-      // 4) Map into UI shape
+      // 5) Map into UI shape
       const mapped = (rawPlanks || []).map((p) => {
         const d = new Date(p.plank_date);
         const today = new Date();
@@ -158,9 +159,43 @@ const ProfilePage: React.FC = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-4">Min Utveckling</h2>
+            <h2 className="text-xl font-semibold mb-4">My Progress</h2>
             <ProgressGraph />
           </section>
+
+          <section>
+            <h2 className="text-xl font-semibold mb-4">My Challenges</h2>
+            {challengesLoading ? (
+              <div className="bg-white p-4 shadow-lg rounded-lg text-center">
+                <p>Loading challenges...</p>
+              </div>
+            ) : challengesError ? (
+              <div className="bg-white p-4 shadow-lg rounded-lg text-center">
+                <p>{challengesError}</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {joinedChallenges.map((challenge) => (
+                  <div
+                    key={challenge.id}
+                    className="bg-white p-6 shadow-lg rounded-lg flex flex-col space-y-4"
+                  >
+                    <h3 className="text-lg font-semibold">{challenge.title}</h3>
+                    <p className="text-gray-600">{challenge.description}</p>
+                    <div className="text-sm text-gray-500">
+                      <p>
+                        <strong>Start:</strong> {new Date(challenge.start_date).toLocaleDateString("sv-SE")}
+                      </p>
+                      <p>
+                        <strong>End:</strong> {new Date(challenge.end_date).toLocaleDateString("sv-SE")}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
         </div>
       </main>
 

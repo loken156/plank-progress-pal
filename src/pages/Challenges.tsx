@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client'; // Import supabase client
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardHeader, CardContent, CardFooter, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Users } from 'lucide-react';
-import styles from './style/Challenges.module.css'; // Import the CSS module
+import styles from './style/Challenges.module.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
@@ -59,40 +59,70 @@ const Challenges = () => {
   }, []);
 
   const handleJoinChallenge = async (challengeId: number) => {
-    // First get the current challenge
-    const { data: challenge, error: fetchError } = await supabase
+    const {
+      data: { user },
+      error: userErr
+    } = await supabase.auth.getUser();
+
+    if (userErr || !user) {
+      console.error("Ingen användare inloggad");
+      return;
+    }
+
+    const { data: existing, error: checkErr } = await supabase
+      .from('challenge_participants')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('challenge_id', challengeId)
+      .single();
+
+    if (existing) {
+      console.log("Redan med i denna challenge");
+      return;
+    }
+
+    const { error: joinErr } = await supabase
+      .from('challenge_participants')
+      .insert({ user_id: user.id, challenge_id: challengeId });
+
+    if (joinErr) {
+      console.error("Fel vid anmälan:", joinErr);
+      return;
+    }
+
+    // Hämta nuvarande deltagarantal
+    const { data: current, error: fetchErr } = await supabase
       .from('challenges')
       .select('participants')
       .eq('id', challengeId)
       .single();
 
-    if (fetchError) {
-      console.error('Error fetching challenge:', fetchError);
+    if (fetchErr || !current) {
+      console.error('Misslyckades att hämta challenge:', fetchErr);
       return;
     }
 
-    // Then update with incremented count
-    const { data, error } = await supabase
+    const { error: updateErr } = await supabase
       .from('challenges')
-      .update({ participants: (challenge?.participants || 0) + 1 })
+      .update({ participants: current.participants + 1 })
       .eq('id', challengeId);
 
-    if (error) {
-      console.error('Error updating challenge:', error);
-    } else {
-      // Refetch challenges after update
-      setChallenges((prevChallenges) =>
-        prevChallenges.map((challenge) =>
-          challenge.id === challengeId
-            ? { ...challenge, participants: challenge.participants + 1 }
-            : challenge
-        )
-      );
+    if (updateErr) {
+      console.error('Fel vid uppdatering av deltagare:', updateErr);
+      return;
     }
+
+    // Lokalt uppdatera state
+    setChallenges((prev) =>
+      prev.map((c) =>
+        c.id === challengeId
+          ? { ...c, participants: c.participants + 1, isParticipating: true }
+          : c
+      )
+    );
   };
 
   const today = new Date();
-  // Set hours to 0 to compare dates only (optional, depends on desired precision)
   today.setHours(0, 0, 0, 0);
 
   if (loading) {
@@ -103,9 +133,7 @@ const Challenges = () => {
     <div className="flex flex-col min-h-screen">
       <Header />
 
-      {/* Hero Section - Moved OUTSIDE the main container div */}
       <section className={styles.hero}>
-        {/* Use a standard container INSIDE the hero for text centering/max-width */}
         <div className="container mx-auto">
           <div className={styles.heroContentWrapper}>
             <h1 className="text-3xl md:text-4xl font-bold mb-4">Plank Challenges</h1>
@@ -116,20 +144,13 @@ const Challenges = () => {
         </div>
       </section>
 
-      {/* Main content area - Apply container styling here */}
-      {/* Removed the outer container div that wrapped both hero and main */}
-      {/* Applying container styles directly to main or using an inner div */}
-      <main className={`flex-grow py-12 px-6 ${styles.container}`}> {/* Apply container class to main */}
-        {/* Or keep main plain and wrap content in a container div: */}
-        {/* <main className="flex-grow py-12 px-6"> */}
-        {/*   <div className={styles.container}> */}
+      <main className={`flex-grow py-12 px-6 ${styles.container}`}>
         <h2 className="text-2xl font-bold mb-8">Current Challenges</h2>
         <div className={styles.grid}>
           {challenges
-            // Filter by both isActive AND if the end date is today or later
             .filter(challenge => {
               const endDate = new Date(challenge.endDate);
-              endDate.setHours(0, 0, 0, 0); // Compare dates only
+              endDate.setHours(0, 0, 0, 0);
               return challenge.isActive && endDate >= today;
             })
             .map((challenge) => (
@@ -166,8 +187,6 @@ const Challenges = () => {
               </Card>
             ))}
         </div>
-        {/* Closing tag for inner container div if used */}
-        {/*   </div> */}
       </main>
 
       <Footer />
