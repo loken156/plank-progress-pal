@@ -1,11 +1,50 @@
-
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (user?.id) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching profile:', error);
+          setIsAdmin(false); // Default to false on error
+        } else {
+          setIsAdmin(data?.role === 'admin');
+        }
+      } else {
+        setIsAdmin(false); // No user logged in
+      }
+    };
+
+    fetchProfile();
+  }, [user]);
+
+  useEffect(() => {
+    console.log('=== User Debug Info ===');
+    console.log('User object:', user);
+    console.log('Is Admin (from state):', isAdmin);
+    console.log('=====================');
+  }, [user, isAdmin]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -18,15 +57,28 @@ const Header = () => {
           <div className="w-10 h-10 bg-gradient-to-r from-plank-blue to-plank-green rounded-lg mr-3 flex items-center justify-center">
             <span className="text-white font-bold text-lg">P</span>
           </div>
-          <h1 className="text-xl md:text-2xl font-poppins font-bold gradient-text">Rank Your Plank</h1>
+          <h1 className="text-xl md:text-2xl font-poppins font-bold gradient-text">Rank a Plank</h1>
         </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-6">
-          <Link to="/" className="font-medium hover:text-plank-blue transition-colors">Hem</Link>
-          <Link to="/challenges" className="font-medium hover:text-plank-blue transition-colors">Utmaningar</Link>
-          <Link to="/profile" className="font-medium hover:text-plank-blue transition-colors">Min Profil</Link>
-          <Button className="plank-btn-primary">Logga In</Button>
+          <Link to="/" className="font-medium hover:text-plank-blue transition-colors">Home</Link>
+          <Link to="/challenges" className="font-medium hover:text-plank-blue transition-colors">Challenges</Link>
+          {user ? (
+            <>
+              <Link to="/profile" className="font-medium hover:text-plank-blue transition-colors">My Profile</Link>
+              {isAdmin && (
+                <Link to="/admin/challenges" className="font-medium hover:text-plank-blue transition-colors">
+                  Manage Challenges
+                </Link>
+              )}
+              <Button onClick={handleLogout} variant="outline">Log Out</Button>
+            </>
+          ) : (
+            <Link to="/auth">
+              <Button className="plank-btn-primary">Log In</Button>
+            </Link>
+          )}
         </nav>
 
         {/* Mobile Menu Button */}
@@ -41,28 +93,45 @@ const Header = () => {
       {isMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-white shadow-md py-4 px-6 animate-slide-in-bottom">
           <nav className="flex flex-col gap-4">
-            <Link 
-              to="/" 
+            <Link
+              to="/"
               className="font-medium hover:text-plank-blue transition-colors py-2"
               onClick={toggleMenu}
             >
-              Hem
+              Home
             </Link>
-            <Link 
-              to="/challenges" 
+            <Link
+              to="/challenges"
               className="font-medium hover:text-plank-blue transition-colors py-2"
               onClick={toggleMenu}
             >
-              Utmaningar
+              Challenges
             </Link>
-            <Link 
-              to="/profile" 
-              className="font-medium hover:text-plank-blue transition-colors py-2"
-              onClick={toggleMenu}
-            >
-              Min Profil
-            </Link>
-            <Button className="plank-btn-primary w-full mt-2">Logga In</Button>
+            {user ? (
+              <>
+                <Link
+                  to="/profile"
+                  className="font-medium hover:text-plank-blue transition-colors py-2"
+                  onClick={toggleMenu}
+                >
+                  My Profile
+                </Link>
+                {isAdmin && (
+                  <Link
+                    to="/admin/challenges"
+                    className="font-medium hover:text-plank-blue transition-colors py-2"
+                    onClick={toggleMenu}
+                  >
+                    Manage Challenges
+                  </Link>
+                )}
+                <Button onClick={handleLogout} variant="outline" className="w-full">Log Out</Button>
+              </>
+            ) : (
+              <Link to="/auth" onClick={toggleMenu}>
+                <Button className="plank-btn-primary w-full">Log In</Button>
+              </Link>
+            )}
           </nav>
         </div>
       )}
