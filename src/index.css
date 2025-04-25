@@ -128,4 +128,8 @@
   .plank-btn-outline {
     @apply border-2 border-plank-blue text-plank-blue hover:bg-plank-blue hover:text-white plank-btn;
   }
+
+  .scroll-mt-header {
+    scroll-margin-top: 80px;
+  }
 }
