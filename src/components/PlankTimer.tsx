@@ -18,6 +18,7 @@ const PlankTimer: React.FC = () => {
     const [seconds, setSeconds] = useState<number>(0);
     const [isActive, setIsActive] = useState<boolean>(false);
     const [isCompleted, setIsCompleted] = useState<boolean>(false);
+    const [vowCheat, setVowCheat] = useState<boolean>(false);
 
     useEffect(() => {
         let interval: number;
@@ -38,6 +39,10 @@ const PlankTimer: React.FC = () => {
     };
 
     const handleStart = (): void => {
+        if (!vowCheat) {
+            toast.error("You must swear you won’t cheat before you start!");
+            return;
+        }
         setIsActive(true);
         setIsCompleted(false);
     };
@@ -50,6 +55,7 @@ const PlankTimer: React.FC = () => {
         setSeconds(0);
         setIsActive(false);
         setIsCompleted(false);
+        setVowCheat(false); // clear the oath for the next round
     };
 
     const handleComplete = async (): Promise<void> => {
@@ -64,13 +70,12 @@ const PlankTimer: React.FC = () => {
             return;
         }
 
-        // only insert the plank; the trigger will maintain stats
+        // only insert the plank; trigger will maintain stats
         const { error: plankErr } = await supabase
             .from("planks")
             .insert({
                 user_id: user.id,
                 duration_s: seconds,
-                // omit plank_date if you’ve set DEFAULT CURRENT_DATE in your schema
             });
 
         if (plankErr) {
@@ -101,7 +106,10 @@ const PlankTimer: React.FC = () => {
                         <p className="text-gray-600 mb-4">
                             You planked for {formatTime(seconds)}
                         </p>
-                        <Button className="plank-btn-outline hover:text-white hover:scale-105" onClick={handleReset}>
+                        <Button
+                            className="plank-btn-outline hover:text-white hover:scale-105"
+                            onClick={handleReset}
+                        >
                             <RotateCcw className="mr-2 h-4 w-4" />
                             New plank
                         </Button>
@@ -109,6 +117,7 @@ const PlankTimer: React.FC = () => {
                 ) : (
                     // Timer view…
                     <>
+                        {/* Timer circle */}
                         <div className="flex justify-center items-center my-8">
                             <div className="relative">
                                 {isActive && (
@@ -128,6 +137,23 @@ const PlankTimer: React.FC = () => {
                             </div>
                         </div>
 
+                        {/* No-cheating checkbox */}
+                        {!isActive && (
+                            <div className="flex items-center justify-center mb-4">
+                                <input
+                                    id="no-cheat"
+                                    type="checkbox"
+                                    className="h-4 w-4"
+                                    checked={vowCheat}
+                                    onChange={(e) => setVowCheat(e.target.checked)}
+                                />
+                                <label htmlFor="no-cheat" className="ml-2 text-sm text-gray-700">
+                                    I solemnly swear my plank be real.
+                                </label>
+                            </div>
+                        )}
+
+                        {/* Controls */}
                         <div className="flex flex-wrap justify-center gap-3 mt-6">
                             {!isActive ? (
                                 <Button
@@ -150,13 +176,12 @@ const PlankTimer: React.FC = () => {
                             {seconds > 0 && (
                                 <>
                                     <Button
-                                        className="plank-btn-outline flex-grow  "
+                                        className="plank-btn-outline flex-grow"
                                         onClick={handleReset}
                                     >
                                         <RotateCcw className="mr-2 h-4 w-4" />
                                         Reset
                                     </Button>
-
                                     {!isActive && (
                                         <Button
                                             className="plank-btn-secondary flex-grow"
