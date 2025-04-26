@@ -15,6 +15,7 @@ import {
     DialogClose,
 } from "@/components/ui/dialog";
 import FullHistoryDialog from "./FullHistoryDialog";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface PlankEntry {
     id: number;
@@ -34,6 +35,7 @@ const formatTime = (totalSeconds: number): string => {
 };
 
 const PlankHistory: React.FC<PlankHistoryProps> = ({ userId }) => {
+    const { user } = useAuth();
     const [recent, setRecent] = useState<PlankEntry[]>([]);
     const [loadingRecent, setLoadingRecent] = useState(true);
 
@@ -92,7 +94,6 @@ const PlankHistory: React.FC<PlankHistoryProps> = ({ userId }) => {
     // Handle adding a new plank
     const handleAddPlank = async (e: React.FormEvent) => {
         e.preventDefault();
-        // parse newTime "MM:SS"
         const [m, s] = newTime.split(":").map((v) => parseInt(v, 10));
         if (isNaN(m) || isNaN(s)) {
             toast.error("Invalid time format");
@@ -116,6 +117,8 @@ const PlankHistory: React.FC<PlankHistoryProps> = ({ userId }) => {
         }
     };
 
+    const isOwnProfile = user?.id === userId;
+
     return (
         <Card>
             <CardHeader className="border-b pb-3 flex items-center justify-between">
@@ -124,45 +127,46 @@ const PlankHistory: React.FC<PlankHistoryProps> = ({ userId }) => {
                     Latest Planks
                 </CardTitle>
 
-                {/* Add New Plank button */}
-                <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                    <DialogTrigger asChild>
-                        <Button size="sm">Add New Plank</Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-sm">
-                        <DialogHeader>
-                            <DialogTitle>Log a New Plank</DialogTitle>
-                            <DialogClose />
-                        </DialogHeader>
-                        <form onSubmit={handleAddPlank} className="space-y-4 pt-2">
-                            <div>
-                                <label className="block text-sm font-medium">Date</label>
-                                <input
-                                    type="date"
-                                    required
-                                    value={newDate}
-                                    onChange={(e) => setNewDate(e.target.value)}
-                                    className="w-full border rounded px-2 py-1"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium">Time (MM:SS)</label>
-                                <input
-                                    type="text"
-                                    pattern="\d{1,2}:\d{2}"
-                                    placeholder="mm:ss"
-                                    required
-                                    value={newTime}
-                                    onChange={(e) => setNewTime(e.target.value)}
-                                    className="w-full border rounded px-2 py-1"
-                                />
-                            </div>
-                            <div className="flex justify-end">
-                                <Button type="submit">Save</Button>
-                            </div>
-                        </form>
-                    </DialogContent>
-                </Dialog>
+                {isOwnProfile && (
+                    <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                        <DialogTrigger asChild>
+                            <Button size="sm">Add New Plank</Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-sm">
+                            <DialogHeader>
+                                <DialogTitle>Log a New Plank</DialogTitle>
+                                <DialogClose />
+                            </DialogHeader>
+                            <form onSubmit={handleAddPlank} className="space-y-4 pt-2">
+                                <div>
+                                    <label className="block text-sm font-medium">Date</label>
+                                    <input
+                                        type="date"
+                                        required
+                                        value={newDate}
+                                        onChange={(e) => setNewDate(e.target.value)}
+                                        className="w-full border rounded px-2 py-1"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium">Time (MM:SS)</label>
+                                    <input
+                                        type="text"
+                                        pattern="\d{1,2}:\d{2}"
+                                        placeholder="mm:ss"
+                                        required
+                                        value={newTime}
+                                        onChange={(e) => setNewTime(e.target.value)}
+                                        className="w-full border rounded px-2 py-1"
+                                    />
+                                </div>
+                                <div className="flex justify-end">
+                                    <Button type="submit">Save</Button>
+                                </div>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+                )}
             </CardHeader>
 
             <CardContent className="p-0">
@@ -190,9 +194,11 @@ const PlankHistory: React.FC<PlankHistoryProps> = ({ userId }) => {
                     </ul>
                 )}
 
-                {/* View Full History at bottom */}
                 <div className="p-4 border-t text-center">
-                    <FullHistoryDialog userId={userId} trigger={<Button variant="link">View full history</Button>} />
+                    <FullHistoryDialog
+                        userId={userId}
+                        trigger={<Button variant="link">View full history</Button>}
+                    />
                 </div>
             </CardContent>
         </Card>
