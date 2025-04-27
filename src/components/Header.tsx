@@ -55,7 +55,7 @@ const Header: React.FC = () => {
 
                 {/* Desktop Navigation */}
                 <nav className="hidden md:flex items-center gap-6">
-                    <Link to="/" className="font-medium hover:text-plank-blue transition-colors">
+                    <Link to="/home" className="font-medium hover:text-plank-blue transition-colors">
                         Home
                     </Link>
                     <Link to="/challenges" className="font-medium hover:text-plank-blue transition-colors">

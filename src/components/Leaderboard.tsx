@@ -114,9 +114,6 @@ const Leaderboard: React.FC = () => {
                         ))}
                     </ul>
                     <div className="p-4 text-center border-t">
-                        <button className="text-plank-blue font-medium hover:underline">
-                            View All
-                        </button>
                     </div>
                 </CardContent>
             </Card>
@@ -158,9 +155,6 @@ const Leaderboard: React.FC = () => {
                         ))}
                     </ul>
                     <div className="p-4 text-center border-t">
-                        <button className="text-plank-green font-medium hover:underline">
-                            View All
-                        </button>
                     </div>
                 </CardContent>
             </Card>
