@@ -8,14 +8,18 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-2">
             <Link to="/" className="flex items-center mb-4">
-              <div className="w-8 h-8 bg-gradient-to-r from-plank-blue to-plank-green rounded-lg mr-2 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">P</span>
+              <div className="w-8 h-8 rounded-lg mr-2 flex items-center justify-center">
+                              <img
+                                  src="/RankAPlankLogo.png"
+                                  alt="Rank a Plank logo"
+                                  className="w-full h-full object-contain"
+                              />
               </div>
-              <h3 className="text-lg font-poppins font-bold gradient-text">Rank Your Plank</h3>
+              <h3 className="text-lg font-poppins font-bold gradient-text">Rank A Plank</h3>
             </Link>
             <p className="text-gray-600 text-sm">
               Dive into a world of challenges, achievements, and community.
-              With Rank Your Plank, you can log your daily plank, participate in events, and track your progress.
+              With Rank A Plank, you can log your daily plank, participate in events, and track your progress.
             </p>
           </div>
           <div>
@@ -57,7 +61,7 @@ const Footer = () => {
           </div>
         </div>
         <div className="mt-8 pt-6 border-t border-gray-200 text-center text-sm text-gray-500">
-          &copy; {new Date().getFullYear()} Rank Your Plank. All rights reserved.
+          &copy; {new Date().getFullYear()} Rank A Plank. All rights reserved.
         </div>
       </div>
     </footer>

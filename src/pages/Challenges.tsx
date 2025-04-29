@@ -1,20 +1,9 @@
-// src/pages/Challenges.tsx
-
 import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import {
-    Card,
-    CardHeader,
-    CardContent,
-    CardFooter,
-    CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Calendar, Users, Clock as ClockIcon } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import ChallengePopup, { Challenge } from "@/components/ChallengePopup";
+import ChallengeCard from "@/components/ChallengeCard";
+import { Challenge } from "@/components/ChallengePopup";
 import styles from "./style/Challenges.module.css";
 
 const Challenges: React.FC = () => {
@@ -24,20 +13,19 @@ const Challenges: React.FC = () => {
     useEffect(() => {
         async function fetchChallenges() {
             setLoading(true);
-
-            // 1) who is the user?
+            // 1) Who’s logged in?
             const {
                 data: { user },
                 error: userErr,
             } = await supabase.auth.getUser();
             if (userErr || !user) {
-                console.error("No user");
+                console.error("No user logged in");
                 setChallenges([]);
                 setLoading(false);
                 return;
             }
 
-            // 2) load all challenges, now including start_time
+            // 2) Load all challenges (including start_time)
             const { data: rawChallenges, error: chErr } = await supabase
                 .from("challenges")
                 .select(`
@@ -62,21 +50,21 @@ const Challenges: React.FC = () => {
                 return;
             }
 
-            // 3) load this user's joined challenge IDs
+            // 3) Fetch this user’s joined challenge IDs
             const { data: parts } = await supabase
                 .from("challenge_participants")
                 .select("challenge_id")
                 .eq("user_id", user.id);
             const joinedIds = new Set(parts?.map((p) => p.challenge_id) || []);
 
-            // 4) merge into our shape
+            // 4) Map into our UI shape
             const mapped: Challenge[] = rawChallenges.map((db) => ({
                 id: db.id,
                 title: db.title,
                 description: db.description,
                 image: db.image,
                 startDate: db.start_date,
-                startTime: db.start_time,       // NEW
+                startTime: db.start_time || undefined,
                 endDate: db.end_date,
                 participants: db.participants,
                 isActive: db.is_active,
@@ -95,8 +83,9 @@ const Challenges: React.FC = () => {
     const handleJoinChallenge = async (challengeId: number) => {
         const {
             data: { user },
+            error: userErr,
         } = await supabase.auth.getUser();
-        if (!user) return;
+        if (userErr || !user) return;
 
         // Prevent double-join
         const { data: existing } = await supabase
@@ -107,11 +96,13 @@ const Challenges: React.FC = () => {
             .single();
         if (existing) return;
 
-        // Join & bump count
+        // 1) Insert participation
         await supabase.from("challenge_participants").insert({
             user_id: user.id,
             challenge_id: challengeId,
         });
+
+        // 2) Bump participants count
         const { data: ch } = await supabase
             .from("challenges")
             .select("participants")
@@ -122,6 +113,8 @@ const Challenges: React.FC = () => {
                 .from("challenges")
                 .update({ participants: ch.participants + 1 })
                 .eq("id", challengeId);
+
+            // 3) Update local state
             setChallenges((prev) =>
                 prev.map((c) =>
                     c.id === challengeId
@@ -132,6 +125,7 @@ const Challenges: React.FC = () => {
         }
     };
 
+    // only show active, not-yet-ended challenges
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -169,68 +163,11 @@ const Challenges: React.FC = () => {
                             return c.isActive && end >= today;
                         })
                         .map((c) => (
-                            <Card key={c.id} className={styles.challengeCard}>
-                                <div className={styles.cardImageContainer}>
-                                    <img
-                                        src={c.image}
-                                        alt={c.title}
-                                        className={styles.cardImage}
-                                    />
-                                </div>
-                                <CardHeader className={styles.cardHeader}>
-                                    <CardTitle className={styles.cardTitle}>
-                                        {c.title}
-                                    </CardTitle>
-                                    <Badge variant="secondary">{c.type}</Badge>
-                                </CardHeader>
-                                <CardContent className={styles.cardContent}>
-                                    <p className={styles.cardDescription}>{c.description}</p>
-                                    <div className={styles.cardMeta}>
-                                        {/* Date */}
-                                        <div className={`${styles.metaItem} flex items-center`}>
-                                            <Calendar
-                                                className={`${styles.metaIcon} ${styles.metaIconBlue} mr-1`}
-                                            />
-                                            <span>
-                                                {c.startDate} – {c.endDate}
-                                            </span>
-                                        </div>
-
-                                        {/* Time (only if set) */}
-                                        {c.startTime && (
-                                            <div className={`${styles.metaItem} flex items-center`}>
-                                                <ClockIcon
-                                                    className={`${styles.metaIcon} ${styles.metaIconBlue} mr-1`}
-                                                />
-                                                <span>{c.startTime.slice(0, 5)}</span>
-                                            </div>
-                                        )}
-
-                                        {/* Participants */}
-                                        <div className={`${styles.metaItem} flex items-center`}>
-                                            <Users
-                                                className={`${styles.metaIcon} ${styles.metaIconGreen} mr-1`}
-                                            />
-                                            <span>{c.participants} participants</span>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                                <CardFooter
-                                    className={`${styles.cardFooter} flex items-center gap-4`}
-                                >
-                                    {c.isParticipating ? (
-                                        <Button disabled>You Are In</Button>
-                                    ) : (
-                                        <Button onClick={() => handleJoinChallenge(c.id)}>
-                                            Join Challenge
-                                        </Button>
-                                    )}
-                                    <ChallengePopup
-                                        challenge={c}
-                                        trigger={<Button variant="link">View details</Button>}
-                                    />
-                                </CardFooter>
-                            </Card>
+                            <ChallengeCard
+                                key={c.id}
+                                challenge={c}
+                                onJoin={handleJoinChallenge}
+                            />
                         ))}
                 </div>
             </main>

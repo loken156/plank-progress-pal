@@ -14,6 +14,7 @@ import AdminChallenges from "./pages/admin/Challenges";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import RedirectToSelf from "./components/RedirectToSelf";
+import Home from "./pages/Home";
 
 const queryClient = new QueryClient();
 
@@ -126,7 +127,15 @@ const App = () => {
                   <AdminChallenges />
                 </AdminProtectedRoute>
               }
-            />
+                      />
+            <Route
+              path="/home"
+              element={
+                <ProtectedRoute>
+                  <Home />
+                </ProtectedRoute>
+              }
+              />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
