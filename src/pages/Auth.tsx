@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 
 const Auth: React.FC = () => {
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSignup, setIsSignup] = useState(false);
@@ -19,51 +20,72 @@ const Auth: React.FC = () => {
 
     try {
       if (isSignup) {
-        // Sign up
+        if (!username.trim()) {
+          toast.error("Username is required.");
+          setIsLoading(false);
+          return;
+        }
+
+        // Validate if username is already taken
+        const { data: existingUsers, error: checkError } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('username', username);
+
+        if (checkError) {
+          console.error('Username check failed:', checkError);
+          toast.error("Could not validate username.");
+          setIsLoading(false);
+          return;
+        }
+
+        if (existingUsers.length > 0) {
+          toast.error("Username is already taken.");
+          setIsLoading(false);
+          return;
+        }
+
+        // Proceed with sign up
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
-              username: email.split('@')[0],
-              role: 'user' // Default role
+              username,
+              role: 'user'
             }
           }
         });
 
         if (error) {
           toast.error(error.message);
-          setIsLoading(false); // Stop loading on error
+          setIsLoading(false);
           return;
         }
 
-        // Seed profile row
         if (data.user) {
-          const { error: profErr } = await supabase
-            .from('profiles')
-            .insert({
-              id: data.user.id,
-              username: email.split('@')[0],
-              full_name: null,
-              profile_image: null,
-              bio: '',
-              join_date: new Date().toISOString().split('T')[0],
-              followers_count: 0,
-              role: 'user' // Ensure role is added to profile too if needed elsewhere
-            });
+          const { error: profErr } = await supabase.from('profiles').insert({
+            id: data.user.id,
+            username,
+            full_name: null,
+            profile_image: '/RankAPlank.png', // Set default image
+            bio: '',
+            join_date: new Date().toISOString().split('T')[0],
+            followers_count: 0,
+            role: 'user'
+          });
+
           if (profErr) {
             console.error('Could not create profile:', profErr);
             toast.error('Could not create profile data.');
-            // Optionally handle this more gracefully, maybe delete the auth user?
           }
         }
 
-        // Updated Toast Text
         toast.success('Account created! Check your email for verification.');
         setIsSignup(false);
-        setPassword(''); // Clear password after signup attempt
+        setPassword('');
+        setUsername('');
       } else {
-        // Sign in
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password
@@ -71,20 +93,17 @@ const Auth: React.FC = () => {
 
         if (error) {
           toast.error(error.message);
-          setIsLoading(false); // Stop loading on error
+          setIsLoading(false);
           return;
         }
 
-        // Updated Toast Text
         toast.success('Signed in!');
         navigate('/');
       }
     } catch (err) {
       console.error(err);
-      // Updated Toast Text
       toast.error('An unexpected error occurred.');
     } finally {
-      // Ensure isLoading is always set to false eventually
       setIsLoading(false);
     }
   };
@@ -93,13 +112,26 @@ const Auth: React.FC = () => {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8">
         <div>
-          {/* Updated Heading */}
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
             {isSignup ? 'Create Account' : 'Sign in to your account'}
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleAuth}>
           <div className="rounded-md shadow-sm -space-y-px">
+            {isSignup && (
+              <div>
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  required
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  placeholder="Select a Username"
+                  className="mb-4"
+                />
+              </div>
+            )}
             <div>
               <Label htmlFor="email">Email</Label>
               <Input
@@ -113,7 +145,6 @@ const Auth: React.FC = () => {
               />
             </div>
             <div>
-              {/* Updated Label */}
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
@@ -130,11 +161,9 @@ const Auth: React.FC = () => {
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading
                 ? isSignup
-                  // Updated loading text
                   ? 'Creating account...'
                   : 'Signing in...'
                 : isSignup
-                  // Updated button text
                   ? 'Sign Up'
                   : 'Sign In'}
             </Button>
@@ -146,11 +175,11 @@ const Auth: React.FC = () => {
               className="text-sm text-plank-blue hover:underline"
               onClick={() => {
                 setIsSignup(!isSignup);
-                setPassword(''); // Clear password when toggling
+                setPassword('');
+                setUsername('');
               }}
             >
               {isSignup
-                // Updated toggle text
                 ? 'Already have an account? Sign In'
                 : "Don't have an account? Sign Up"}
             </button>

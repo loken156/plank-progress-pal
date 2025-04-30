@@ -16,7 +16,6 @@ import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useToast } from "@/components/ui/use-toast";
-import ChallengeCard from "@/components/ChallengeCard";
 
 type Challenge = {
     id: number;
@@ -30,6 +29,7 @@ type Challenge = {
     is_active: boolean;
     type: string;
     meeting_url: string | null;
+    repeat_weekdays: number[] | null;
 };
 
 const AdminChallenges: React.FC = () => {
@@ -47,7 +47,8 @@ const AdminChallenges: React.FC = () => {
         end_date: '',
         type: '',
         meeting_url: '',
-        is_active: true
+        is_active: true,
+        repeat_weekdays: [] as number[],
     });
 
     useEffect(() => {
@@ -59,18 +60,19 @@ const AdminChallenges: React.FC = () => {
         const { data, error } = await supabase
             .from<Challenge>('challenges')
             .select(`
-        id,
-        title,
-        description,
-        image,
-        start_date,
-        start_time,
-        end_date,
-        participants,
-        is_active,
-        type,
-        meeting_url
-      `)
+                id,
+                title,
+                description,
+                image,
+                start_date,
+                start_time,
+                end_date,
+                participants,
+                is_active,
+                type,
+                meeting_url,
+                repeat_weekdays
+            `)
             .order('start_date', { ascending: false });
 
         if (error) {
@@ -89,7 +91,6 @@ const AdminChallenges: React.FC = () => {
         e.preventDefault();
 
         if (editingChallenge) {
-            // Update existing challenge
             const { error } = await supabase
                 .from('challenges')
                 .update(formData)
@@ -103,7 +104,6 @@ const AdminChallenges: React.FC = () => {
                 fetchChallenges();
             }
         } else {
-            // Create new challenge
             const { error } = await supabase
                 .from('challenges')
                 .insert([{ ...formData, participants: 0 }]);
@@ -125,7 +125,8 @@ const AdminChallenges: React.FC = () => {
             end_date: '',
             type: '',
             meeting_url: '',
-            is_active: true
+            is_active: true,
+            repeat_weekdays: [],
         });
     };
 
@@ -140,7 +141,8 @@ const AdminChallenges: React.FC = () => {
             end_date: challenge.end_date,
             type: challenge.type,
             meeting_url: challenge.meeting_url ?? '',
-            is_active: challenge.is_active
+            is_active: challenge.is_active,
+            repeat_weekdays: challenge.repeat_weekdays ?? [],
         });
     };
 
@@ -159,7 +161,7 @@ const AdminChallenges: React.FC = () => {
     };
 
     if (loading) {
-        return <div className="p-8 text-center">Loading…</div>;
+        return <div className="p-8 text-center">Loading...</div>;
     }
 
     return (
@@ -265,6 +267,35 @@ const AdminChallenges: React.FC = () => {
                                     />
                                     <Label htmlFor="is_active">Active</Label>
                                 </div>
+                                <div>
+                                    <Label>Repeat on days:</Label>
+                                    <div className="flex gap-4 mt-1 flex-wrap">
+                                        {[
+                                            { label: "Sun", value: 0 },
+                                            { label: "Mon", value: 1 },
+                                            { label: "Tue", value: 2 },
+                                            { label: "Wed", value: 3 },
+                                            { label: "Thu", value: 4 },
+                                            { label: "Fri", value: 5 },
+                                            { label: "Sat", value: 6 },
+                                        ].map((day) => (
+                                            <label key={day.value} className="inline-flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    className="mr-1"
+                                                    checked={formData.repeat_weekdays.includes(day.value)}
+                                                    onChange={(e) => {
+                                                        const updated = e.target.checked
+                                                            ? [...formData.repeat_weekdays, day.value]
+                                                            : formData.repeat_weekdays.filter((d) => d !== day.value);
+                                                        setFormData({ ...formData, repeat_weekdays: updated });
+                                                    }}
+                                                />
+                                                {day.label}
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
                                 <Button type="submit" className="w-full">
                                     {editingChallenge ? 'Update Challenge' : 'Create Challenge'}
                                 </Button>
@@ -286,8 +317,7 @@ const AdminChallenges: React.FC = () => {
                                     <div className="text-sm space-y-1">
                                         <p>
                                             <strong>Start:</strong>{" "}
-                                            {new Date(challenge.start_date).toLocaleDateString()}{" "}
-                                            at {challenge.start_time}
+                                            {new Date(challenge.start_date).toLocaleDateString()} at {challenge.start_time}
                                         </p>
                                         <p>
                                             <strong>End:</strong>{" "}
@@ -313,24 +343,21 @@ const AdminChallenges: React.FC = () => {
                                             <strong>Participants:</strong> {challenge.participants}
                                         </p>
                                         <p>
-                                            <strong>Status:</strong>{" "}
-                                            {challenge.is_active ? 'Active' : 'Inactive'}
+                                            <strong>Status:</strong> {challenge.is_active ? 'Active' : 'Inactive'}
                                         </p>
+                                        {challenge.repeat_weekdays && (
+                                            <p>
+                                                <strong>Repeats on:</strong>{" "}
+                                                {challenge.repeat_weekdays
+                                                    .map((d) => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d])
+                                                    .join(", ")}
+                                            </p>
+                                        )}
                                     </div>
                                 </CardContent>
                                 <CardFooter className="flex justify-between">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => handleEdit(challenge)}
-                                    >
-                                        Edit
-                                    </Button>
-                                    <Button
-                                        variant="destructive"
-                                        onClick={() => handleDelete(challenge.id)}
-                                    >
-                                        Delete
-                                    </Button>
+                                    <Button variant="outline" onClick={() => handleEdit(challenge)}>Edit</Button>
+                                    <Button variant="destructive" onClick={() => handleDelete(challenge.id)}>Delete</Button>
                                 </CardFooter>
                             </Card>
                         ))}
